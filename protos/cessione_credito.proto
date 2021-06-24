@@ -1,0 +1,66 @@
+
+syntax = "proto3";
+
+message PropostaCessioneState {
+    int32 id = 1;
+    TipologiaCessione tipologia = 2;
+    StatoPropostaCessione stato = 3;
+    // Chiave pubblica cedente
+    string cedente = 4;
+    // id del gruppo acquirente che ha ottenuto la cessione
+    int32 id_gruppo_acquirente = 5;
+    string data_creazione = 6;
+    string note = 7;
+    // valore in cent di €
+    uint32 importo_totale = 8;
+    // valore in centi di € 
+    uint32 credito_totale = 9;
+    repeated OffertaProposta offerte = 10;
+    // map<id_file_documento, sha512 documento> file documenti
+    map<int32, string> hash_documenti = 11;
+     // map<id_file_contratto, sha512 contratto> file contratti
+    map<int32, string> hash_contratti = 12;
+}
+
+message OffertaProposta {
+    int32 id = 1;
+    int32 id_gruppo_acquirente = 2;
+    StatoOffertaProposta stato = 3;
+    // entità dell'offerta in cent di €
+    uint32 valore = 4;
+    string data_creazione = 5;
+    string data_ultimo_aggiornamento = 6;
+}
+
+enum TipologiaCessione {
+    PREISTRUTTORIA = 0;
+    ISTRUTTORIA = 1;
+}
+
+enum StatoPropostaCessione {
+    PREPARAZIONE = 0;
+    PROPOSTA = 1;
+    PRESA_IN_CARICO = 2;
+    VALIDATA = 3;
+    INVALIDATA = 4;
+    CONTRATTO_DA_FIRMARE = 5;
+    CONTRATTO_FIRMATO = 6;
+}
+
+enum StatoOffertaProposta {
+    PROPOSTA_CEDENTE = 1;
+    PROPOSTA_ACQUIRENTE = 2;
+    ACETTATA = 3;
+    RIFIUTATA = 4;
+    CANCELLATA = 5;
+}
+
+message PropstaCessionePayload {
+    enum PayloadType {
+        PAYLOAD_TYPE_UNSET = 0;
+    }
+
+    PayloadType payload_type = 1;
+
+}
+
