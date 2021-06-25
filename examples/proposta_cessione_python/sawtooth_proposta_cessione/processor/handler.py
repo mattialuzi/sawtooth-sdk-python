@@ -34,7 +34,7 @@ class XoTransactionHandler(TransactionHandler):
     # pylint: disable=invalid-overridden-method
     @property
     def family_name(self):
-        return 'xo'
+        return 'proposta_cessione'
 
     @property
     def family_versions(self):
@@ -42,7 +42,7 @@ class XoTransactionHandler(TransactionHandler):
 
     @property
     def namespaces(self):
-        return [XO_NAMESPACE]
+        return 
 
     def apply(self, transaction, context):
 

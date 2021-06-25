@@ -50,31 +50,54 @@ services:
         intkey-tp-python -vv -C tcp://validator:4004
       "
     stop_signal: SIGKILL
-
-
-  xo-tp-python:
+    
+    proposta-cessione-tp-python:
     build:
       context: .
-      dockerfile: examples/xo_python/Dockerfile
+      dockerfile: examples/proposta_cessione_python/Dockerfile
       args:
         - http_proxy
         - https_proxy
         - no_proxy
-    image: xo-tp-python-local:${ISOLATION_ID}
+    image: proposta-cessione-tp-python-local:${ISOLATION_ID}
     volumes:
       - ./:/project/sawtooth-sdk-python
-    container_name: xo-tp-python-local
+    container_name: proposta-cessione-tp-python-local
     depends_on:
       - validator
     command: |
       bash -c "
         bin/protogen
-        cd examples/xo_python
+        cd examples/proposta_cessione_python
         python3 setup.py clean --all
         python3 setup.py build
-        xo-tp-python -vv -C tcp://validator:4004
+        proposta-cessione-tp-python -vv -C tcp://validator:4004
       "
     stop_signal: SIGKILL
+
+  # xo-tp-python:
+    # build:
+      # context: .
+      # dockerfile: examples/xo_python/Dockerfile
+      # args:
+        # - http_proxy
+        # - https_proxy
+        # - no_proxy
+    # image: xo-tp-python-local:${ISOLATION_ID}
+    # volumes:
+      # - ./:/project/sawtooth-sdk-python
+    # container_name: xo-tp-python-local
+    # depends_on:
+      # - validator
+    # command: |
+      # bash -c "
+        # bin/protogen
+        # cd examples/xo_python
+        # python3 setup.py clean --all
+        # python3 setup.py build
+        # xo-tp-python -vv -C tcp://validator:4004
+      # "
+    # stop_signal: SIGKILL
 
 
   client:

@@ -53,6 +53,6 @@ setup(
     entry_points={
         'console_scripts': [
             # 'xo = sawtooth_xo.xo_cli:main_wrapper',
-            'proposta-cessione-tp = sawtooth_proposta_cessione.processor.main:main',
+            'proposta-cessione-tp-python = sawtooth_proposta_cessione.processor.main:main',
         ]
     })
