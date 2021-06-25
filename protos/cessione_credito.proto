@@ -13,23 +13,14 @@ message PropostaCessioneState {
     string note = 7;
     // valore in cent di €
     uint32 importo_totale = 8;
-    // valore in centi di € 
+    // valore in cent di € 
     uint32 credito_totale = 9;
-    repeated OffertaProposta offerte = 10;
+    // map<id_offerta, offerta> offerte
+    map<int32, OffertaProposta> offerte = 10;
     // map<id_file_documento, sha512 documento> file documenti
-    map<int32, string> hash_documenti = 11;
+    map<int32, HashedFile> hash_documenti = 11;
      // map<id_file_contratto, sha512 contratto> file contratti
-    map<int32, string> hash_contratti = 12;
-}
-
-message OffertaProposta {
-    int32 id = 1;
-    int32 id_gruppo_acquirente = 2;
-    StatoOffertaProposta stato = 3;
-    // entità dell'offerta in cent di €
-    uint32 valore = 4;
-    string data_creazione = 5;
-    string data_ultimo_aggiornamento = 6;
+    map<int32, HashedFile> hash_contratti = 12;
 }
 
 enum TipologiaCessione {
@@ -48,19 +39,61 @@ enum StatoPropostaCessione {
 }
 
 enum StatoOffertaProposta {
-    PROPOSTA_CEDENTE = 1;
-    PROPOSTA_ACQUIRENTE = 2;
-    ACETTATA = 3;
-    RIFIUTATA = 4;
-    CANCELLATA = 5;
+    PROPOSTA_CEDENTE = 0;
+    PROPOSTA_ACQUIRENTE = 1;
+    ACETTATA = 2;
+    RIFIUTATA = 3;
+    CANCELLATA = 4;
+}
+
+message OffertaProposta {
+    int32 id_proposta = 1;
+    int32 id_gruppo_acquirente = 2;
+    StatoOffertaProposta stato = 3;
+    // entità dell'offerta in cent di €
+    uint32 valore = 4;
+    string data_creazione = 5;
+    string data_ultimo_aggiornamento = 6;
+}
+
+message HashedFile {
+    int32 id_file = 1;
+    string hash = 2;
 }
 
 message PropstaCessionePayload {
+    // payload per aggiornare lo stato della proposta, opzionalmente si possono specificare delle note
+    message AggiornamentoStato {
+        StatoPropostaCessione nuovo_stato = 1;
+        string note = 2;
+    }
+    // payload per caricare nuove offerte o aggiornare quelle esistenti (a seconda )
+    message AggiornamentoOfferte {
+        repeated OffertaProposta offerte_aggiornate = 1;
+    }
+    // payload per caricare nuove hash di documenti o aggiornare quelli esistenti
+    message AggiornamentoDocumenti {
+        repeated HashedFile documenti_aggiornati = 1;
+    }
+    // payload per caricare nuove hash di contratti o aggiornare quelli esistenti
+    message AggiornamentoContratti {
+        repeated HashedFile contratti_aggiornati = 1;
+    }
+
     enum PayloadType {
         PAYLOAD_TYPE_UNSET = 0;
+        NUOVA_PROPOSTA = 1;
+        AGGIORNAMENTO_STATO = 2;
+        AGGIORNAMENTO_OFFERTE = 3;
+        AGGIORNAMENTO_DOCUMENTI = 4;
+        AGGIORNAMENTO_CONTRATTI = 5;
     }
 
     PayloadType payload_type = 1;
 
+    PropostaCessioneState nuova_proposta = 2;
+    AggiornamentoStato aggiornamento_stato = 3;
+    AggiornamentoOfferte aggiornamento_offerte = 4;
+    AggiornamentoDocumenti aggiornamento_documenti = 5;
+    AggiornamentoContratti aggiornamento_contratti = 6;
 }
-
