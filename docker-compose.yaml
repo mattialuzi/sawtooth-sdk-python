@@ -68,7 +68,7 @@ services:
     command: |
       bash -c "
         bin/protogen
-        cd examples/proposta_cessione_python
+        cd ../examples/proposta_cessione_python
         python3 setup.py clean --all
         python3 setup.py build
         proposta-cessione-tp-python -vv -C tcp://validator:4004
