@@ -25,9 +25,6 @@ from sawtooth_sdk.processor.handler import TransactionHandler
 from sawtooth_sdk.processor.exceptions import InvalidTransaction
 from sawtooth_sdk.processor.exceptions import InternalError
 
-from sawtooth_sdk.protobuf.cessione_credito_pb2 import PropostaCessionePayload
-from sawtooth_sdk.protobuf.cessione_credito_pb2 import PropostaCessioneState
-
 
 LOGGER = logging.getLogger(__name__)
 
@@ -55,17 +52,17 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
         # header = transaction.header
         # signer = header.signer_public_key
 
-        payload = PropostaCessionePayload()
-        # aggiungere try catch deserializzazione
-        try:
-            payload.ParseFromString(transaction.payload)
-            if payload.payload_type == PropostaCessionePayload.PayloadType.NUOVA_PROPOSTA:
-                nuova_proposta = payload.nuova_proposta
-                address = self.PROPOSTA_CESSIONE_NAMESPACE + hashlib.sha512(str(nuova_proposta.id).encode("utf-8")).hexdigest()[0:64]
-                context.set_state({address: nuova_proposta.SerializeToString()})
-            else:
-                raise InvalidTransaction("Unhandled Payload Type")
-        except Exception:
+        # payload = PropostaCessionePayload()
+        # # aggiungere try catch deserializzazione
+        # try:
+        #     payload.ParseFromString(transaction.payload)
+        #     if payload.payload_type == PropostaCessionePayload.PayloadType.NUOVA_PROPOSTA:
+        #         nuova_proposta = payload.nuova_proposta
+        #         address = self.PROPOSTA_CESSIONE_NAMESPACE + hashlib.sha512(str(nuova_proposta.id).encode("utf-8")).hexdigest()[0:64]
+        #         context.set_state({address: nuova_proposta.SerializeToString()})
+        #     else:
+        #         raise InvalidTransaction("Unhandled Payload Type")
+        # except Exception:
             raise InvalidTransaction("Invalid payload serialization")
         
 # def _update_board(board, space, state):

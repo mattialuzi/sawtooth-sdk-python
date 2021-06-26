@@ -12,5 +12,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ------------------------------------------------------------------------------
-
-SAWTOOTH_PROPOSTA_CESSIONE_TP_PYTHON_ARGS=-v -C tcp://localhost:4004

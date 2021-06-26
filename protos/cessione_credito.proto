@@ -61,7 +61,7 @@ message HashedFile {
     string hash = 2;
 }
 
-message PropstaCessionePayload {
+message PropostaCessionePayload {
     // payload per aggiornare lo stato della proposta, opzionalmente si possono specificare delle note
     message AggiornamentoStato {
         StatoPropostaCessione nuovo_stato = 1;

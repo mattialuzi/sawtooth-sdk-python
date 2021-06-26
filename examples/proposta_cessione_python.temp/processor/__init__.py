@@ -1,4 +1,5 @@
-# Copyright 2017 Intel Corporation
+
+# Copyright 2018 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,18 +12,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# ------------------------------------------------------------------------------
+# -----------------------------------------------------------------------------
+'''
+Define files for the transaction processor package in this directory.
+'''
 
-[Unit]
-Description=Sawtooth XO TP Python
-After=network.target
-
-[Service]
-User=sawtooth
-Group=sawtooth
-EnvironmentFile=-/etc/default/proposta-cessione-tp-python
-ExecStart=/usr/bin/proposta-cessione-tp-python $SAWTOOTH_PROPOSTA_CESSIONE_TP_PYTHON_ARGS
-Restart=on-failure
-
-[Install]
-WantedBy=multi-user.target
+__all__ = [
+    'main'
+]
