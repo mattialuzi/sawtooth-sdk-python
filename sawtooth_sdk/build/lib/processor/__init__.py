@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-#
-# Copyright 2018 Intel Corporation
+# Copyright 2016 Intel Corporation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +13,20 @@
 # limitations under the License.
 # ------------------------------------------------------------------------------
 
-from processor.main import main
+'''The processor module defines:
 
-if __name__ == '__main__':
-    main()
+1. A TransactionHandler interface to be
+used to create new transaction families.
+
+2. A high-level, general purpose TransactionProcessor to which any
+number of handlers can be added.
+
+3. A Context class used to abstract getting and setting addresses in
+global validator state.
+'''
+
+__all__ = [
+    'core',
+    'context',
+    'exceptions'
+]
