@@ -47,7 +47,7 @@ enum StatoOffertaProposta {
 }
 
 message OffertaProposta {
-    int32 id_proposta = 1;
+    int32 id = 1;
     int32 id_gruppo_acquirente = 2;
     StatoOffertaProposta stato = 3;
     // entità dell'offerta in cent di €
@@ -57,27 +57,31 @@ message OffertaProposta {
 }
 
 message HashedFile {
-    int32 id_file = 1;
+    int32 id = 1;
     string hash = 2;
 }
 
 message PropostaCessionePayload {
     // payload per aggiornare lo stato della proposta, opzionalmente si possono specificare delle note
     message AggiornamentoStato {
-        StatoPropostaCessione nuovo_stato = 1;
-        string note = 2;
+        int32 id_proposta = 1;
+        StatoPropostaCessione nuovo_stato = 2;
+        string note = 3;
     }
     // payload per caricare nuove offerte o aggiornare quelle esistenti (a seconda )
     message AggiornamentoOfferte {
-        repeated OffertaProposta offerte_aggiornate = 1;
+        int32 id_proposta = 1;
+        repeated OffertaProposta offerte_aggiornate = 2;
     }
     // payload per caricare nuove hash di documenti o aggiornare quelli esistenti
     message AggiornamentoDocumenti {
-        repeated HashedFile documenti_aggiornati = 1;
+        int32 id_proposta = 1;
+        repeated HashedFile documenti_aggiornati = 2;
     }
     // payload per caricare nuove hash di contratti o aggiornare quelli esistenti
     message AggiornamentoContratti {
-        repeated HashedFile contratti_aggiornati = 1;
+        int32 id_proposta = 1;
+        repeated HashedFile contratti_aggiornati = 2;
     }
 
     enum PayloadType {

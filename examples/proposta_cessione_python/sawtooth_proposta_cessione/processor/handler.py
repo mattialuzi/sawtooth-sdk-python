@@ -49,109 +49,81 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
     @property
     def namespaces(self):
         return [self.PROPOSTA_CESSIONE_NAMESPACE]
+
+    
     
     def apply(self, transaction, context):
         
-        # header = transaction.header
+        self._context = context
+        header = transaction.header
         # signer = header.signer_public_key
 
         payload = PropostaCessionePayload()
-        # aggiungere try catch deserializzazione
         try:
             payload.ParseFromString(transaction.payload)
-            if payload.payload_type == PropostaCessionePayload.PayloadType.NUOVA_PROPOSTA:
-                nuova_proposta = payload.nuova_proposta
-                address = self.PROPOSTA_CESSIONE_NAMESPACE + hashlib.sha512(str(nuova_proposta.id).encode("utf-8")).hexdigest()[0:64]
-                context.set_state({address: nuova_proposta.SerializeToString()})
-            else:
-                raise InvalidTransaction("Unhandled Payload Type")
         except Exception:
             raise InvalidTransaction("Invalid payload serialization")
+
+        # TODO: controllare identità e permessi per le varie azioni 
+        # TODO: controllare i campi dei vari tipi di payload ( approfondisci oneof)
         
-# def _update_board(board, space, state):
-#     if state == 'P1-NEXT':
-#         mark = 'X'
-#     elif state == 'P2-NEXT':
-#         mark = 'O'
+        # Nuova proposta
+        if payload.payload_type == PropostaCessionePayload.PayloadType.NUOVA_PROPOSTA:
+            nuova_proposta = payload.nuova_proposta
+            address = self.PROPOSTA_CESSIONE_NAMESPACE + hashlib.sha512(str(nuova_proposta.id).encode("utf-8")).hexdigest()[0:64]
+            context.set_state({address: nuova_proposta.SerializeToString()})
 
-#     index = space - 1
+        # aggiornamento stato proposta    
+        elif payload.payload_type == PropostaCessionePayload.PayloadType.AGGIORNAMENTO_STATO:
+            action_payload = payload.aggiornamento_stato
+            proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
+            proposta.stato = action_payload.nuovo_stato
+            self.set_proposta_cessione_state(proposta)
+        
+        # aggiornamento offerte proposta
+        elif payload.payload_type == PropostaCessionePayload.PayloadType.AGGIORNAMENTO_OFFERTE:
+            action_payload = payload.aggiornamento_offerte
+            proposta = self.get_proposta_cessione_address(action_payload.id_proposta)
+            for offerta in action_payload.offerte_aggiornate:
+                entry = proposta.documenti[offerta.id]
+                entry.Clear()
+                entry.CopyFrom(offerta)
+            self.set_proposta_cessione_state(proposta)
 
-#     # replace the index-th space with mark, leave everything else the same
-#     return ''.join([
-#         current if square != index else mark
-#         for square, current in enumerate(board)
-#     ])
+        # aggiornamento documenti proposta
+        elif payload.payload_type == PropostaCessionePayload.PayloadType.AGGIORNAMENTO_DOCUMENTI:
+            action_payload = payload.aggiornamento_documenti
+            proposta = self.get_proposta_cessione_address(action_payload.id_proposta)
+            for doc in action_payload.documenti_aggiornati:
+                entry = proposta.documenti[doc.id]
+                entry.Clear()
+                entry.CopyFrom(doc)
+            self.set_proposta_cessione_state(proposta)
+        
+        # aggiornamento contratti proposta
+        elif payload.payload_type == PropostaCessionePayload.PayloadType.AGGIORNAMENTO_CONTRATTI:
+            action_payload = payload.aggiornamento_contratti
+            proposta = self.get_proposta_cessione_address(action_payload.id_proposta)
+            for contratto in action_payload.contratti_aggiornati:
+                entry = proposta.documenti[contratto.id]
+                entry.Clear()
+                entry.CopyFrom(contratto)
+            self.set_proposta_cessione_state(proposta)
 
+        else:
+            raise InvalidTransaction("Unhandled Payload Type")
+        
 
-# def _update_game_state(game_state, board):
-#     x_wins = _is_win(board, 'X')
-#     o_wins = _is_win(board, 'O')
-
-#     if x_wins and o_wins:
-#         raise InternalError('Two winners (there can be only one)')
-
-#     if x_wins:
-#         return 'P1-WIN'
-
-#     if o_wins:
-#         return 'P2-WIN'
-
-#     if '-' not in board:
-#         return 'TIE'
-
-#     if game_state == 'P1-NEXT':
-#         return 'P2-NEXT'
-
-#     if game_state == 'P2-NEXT':
-#         return 'P1-NEXT'
-
-#     if game_state in ('P1-WINS', 'P2-WINS', 'TIE'):
-#         return game_state
-
-#     raise InternalError('Unhandled state: {}'.format(game_state))
-
-
-# def _is_win(board, letter):
-#     wins = ((1, 2, 3), (4, 5, 6), (7, 8, 9),
-#             (1, 4, 7), (2, 5, 8), (3, 6, 9),
-#             (1, 5, 9), (3, 5, 7))
-
-#     for win in wins:
-#         if (board[win[0] - 1] == letter
-#                 and board[win[1] - 1] == letter
-#                 and board[win[2] - 1] == letter):
-#             return True
-#     return False
-
-
-# def _game_data_to_str(board, game_state, player1, player2, name):
-#     board = list(board.replace("-", " "))
-#     out = ""
-#     out += "GAME: {}\n".format(name)
-#     out += "PLAYER 1: {}\n".format(player1[:6])
-#     out += "PLAYER 2: {}\n".format(player2[:6])
-#     out += "STATE: {}\n".format(game_state)
-#     out += "\n"
-#     out += "{} | {} | {}\n".format(board[0], board[1], board[2])
-#     out += "---|---|---\n"
-#     out += "{} | {} | {}\n".format(board[3], board[4], board[5])
-#     out += "---|---|---\n"
-#     out += "{} | {} | {}".format(board[6], board[7], board[8])
-#     return out
-
-
-# def _display(msg):
-#     n = msg.count("\n")
-
-#     if n > 0:
-#         msg = msg.split("\n")
-#         length = max(len(line) for line in msg)
-#     else:
-#         length = len(msg)
-#         msg = [msg]
-
-#     # pylint: disable=logging-not-lazy
-#     LOGGER.debug("+" + (length + 2) * "-" + "+")
-#     for line in msg:
-#         LOGGER.debug("+ " + line.center(length) + " +")
-#     LOGGER.debug("+" + (length + 2) * "-" + "+")
+    def get_proposta_cessione_address(self, id):
+        return self.PROPOSTA_CESSIONE_NAMESPACE + hashlib.sha512(str(id).encode("utf-8")).hexdigest()[0:64]
+    
+    def get_proposta_cessione_state(self, id):
+        # TODO: aggiungere try catch 
+        address = self.get_proposta_cessione_address(id)
+        proposta = PropostaCessioneState()
+        return proposta.ParseFromString(self._context.get_state([address])[0].data)
+    
+    def set_proposta_cessione_state(self, proposta):
+        # TODO: aggiungere try catch 
+        address = self.get_proposta_cessione_address(id)
+        self._context.set_state({address: proposta.SerializeToString()})
