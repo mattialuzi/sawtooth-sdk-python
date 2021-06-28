@@ -49,8 +49,6 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
     @property
     def namespaces(self):
         return [self.PROPOSTA_CESSIONE_NAMESPACE]
-
-    
     
     def apply(self, transaction, context):
         
@@ -65,66 +63,86 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
             raise InvalidTransaction("Invalid payload serialization")
 
         # TODO: controllare identità e permessi per le varie azioni 
-        # TODO: controllare i campi dei vari tipi di payload ( approfondisci oneof)
         
         # Nuova proposta
         if payload.payload_type == PropostaCessionePayload.NUOVA_PROPOSTA:
-            nuova_proposta = payload.nuova_proposta
-            self.set_proposta_cessione_state(nuova_proposta)
+            action_payload = payload.nuova_proposta
+            if action_payload:
+                self.set_proposta_cessione_state(action_payload)
+            else: 
+                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.Name(payload.payload_type)))
 
         # aggiornamento stato proposta    
         elif payload.payload_type == PropostaCessionePayload.AGGIORNAMENTO_STATO:
             action_payload = payload.aggiornamento_stato
-            proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
-            proposta.stato = action_payload.nuovo_stato
-            proposta.note = action_payload.note
-            self.set_proposta_cessione_state(proposta)
+            if action_payload:
+                proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
+                proposta.stato = action_payload.nuovo_stato
+                proposta.note = action_payload.note
+                self.set_proposta_cessione_state(proposta)
+            else: 
+                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.Name(payload.payload_type)))
         
         # aggiornamento offerte proposta
         elif payload.payload_type == PropostaCessionePayload.AGGIORNAMENTO_OFFERTE:
             action_payload = payload.aggiornamento_offerte
-            proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
-            for offerta in action_payload.offerte_aggiornate:
-                entry = proposta.documenti[offerta.id]
-                entry.Clear()
-                entry.CopyFrom(offerta)
-            self.set_proposta_cessione_state(proposta)
+            if action_payload:
+                proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
+                for offerta in action_payload.offerte_aggiornate:
+                    entry = proposta.offerte[offerta.id]
+                    entry.Clear()
+                    entry.CopyFrom(offerta)
+                self.set_proposta_cessione_state(proposta)
+            else: 
+                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.Name(payload.payload_type)))
 
         # aggiornamento documenti proposta
         elif payload.payload_type == PropostaCessionePayload.AGGIORNAMENTO_DOCUMENTI:
             action_payload = payload.aggiornamento_documenti
-            proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
-            for doc in action_payload.documenti_aggiornati:
-                entry = proposta.documenti[doc.id]
-                entry.Clear()
-                entry.CopyFrom(doc)
-            self.set_proposta_cessione_state(proposta)
+            if action_payload:
+                proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
+                for doc in action_payload.documenti_aggiornati:
+                    entry = proposta.documenti[doc.id]
+                    entry.Clear()
+                    entry.CopyFrom(doc)
+                self.set_proposta_cessione_state(proposta)
+            else: 
+                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.Name(payload.payload_type)))
         
         # aggiornamento contratti proposta
         elif payload.payload_type == PropostaCessionePayload.AGGIORNAMENTO_CONTRATTI:
             action_payload = payload.aggiornamento_contratti
-            proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
-            for contratto in action_payload.contratti_aggiornati:
-                entry = proposta.documenti[contratto.id]
-                entry.Clear()
-                entry.CopyFrom(contratto)
-            self.set_proposta_cessione_state(proposta)
+            if action_payload:
+                proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
+                for contratto in action_payload.contratti_aggiornati:
+                    entry = proposta.contratti[contratto.id]
+                    entry.Clear()
+                    entry.CopyFrom(contratto)
+                self.set_proposta_cessione_state(proposta)
+            else: 
+                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.Name(payload.payload_type)))
 
         else:
-            raise InvalidTransaction("Unhandled Payload Type")
+            raise InvalidTransaction("Unhandled payload type")
         
 
     def get_proposta_cessione_address(self, id):
         return self.PROPOSTA_CESSIONE_NAMESPACE + hashlib.sha512(str(id).encode("utf-8")).hexdigest()[0:64]
     
     def get_proposta_cessione_state(self, id):
-        # TODO: aggiungere try catch 
         address = self.get_proposta_cessione_address(id)
         proposta = PropostaCessioneState()
-        proposta.ParseFromString(self._context.get_state([address])[0].data)
-        return proposta
+        try:
+            proposta.ParseFromString(self._context.get_state([address])[0].data)
+            return proposta
+        except IndexError:
+            raise InvalidTransaction('No data at address: {}'.format(address))
+        except Exception as e:
+            raise InternalError('Failed to load state data') from e
     
     def set_proposta_cessione_state(self, proposta):
         # TODO: aggiungere try catch 
         address = self.get_proposta_cessione_address(proposta.id)
-        self._context.set_state({address: proposta.SerializeToString()})
+        addresses = self._context.set_state({address: proposta.SerializeToString()})
+        if not addresses:
+            raise InternalError('State error')

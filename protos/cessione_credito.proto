@@ -95,6 +95,7 @@ message PropostaCessionePayload {
 
     PayloadType payload_type = 1;
 
+    // TODO: considera utilizzo oneof per questi campi 
     PropostaCessioneState nuova_proposta = 2;
     AggiornamentoStato aggiornamento_stato = 3;
     AggiornamentoOfferte aggiornamento_offerte = 4;
