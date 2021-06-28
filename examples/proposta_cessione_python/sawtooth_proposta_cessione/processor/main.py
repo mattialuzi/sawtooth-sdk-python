@@ -110,7 +110,6 @@ def main(args=None):
         handler = PropostaCessioneTransactionHandler()
 
         processor.add_handler(handler)
-        print('ciaoooooooooooooooooooooo')
         processor.start()
     except KeyboardInterrupt:
         pass

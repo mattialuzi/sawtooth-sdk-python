@@ -18,9 +18,9 @@ message PropostaCessioneState {
     // map<id_offerta, offerta> offerte
     map<int32, OffertaProposta> offerte = 10;
     // map<id_file_documento, sha512 documento> file documenti
-    map<int32, HashedFile> hash_documenti = 11;
+    map<int32, HashedFile> documenti = 11;
      // map<id_file_contratto, sha512 contratto> file contratti
-    map<int32, HashedFile> hash_contratti = 12;
+    map<int32, HashedFile> contratti = 12;
 }
 
 enum TipologiaCessione {

@@ -68,22 +68,22 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
         # TODO: controllare i campi dei vari tipi di payload ( approfondisci oneof)
         
         # Nuova proposta
-        if payload.payload_type == PropostaCessionePayload.PayloadType.NUOVA_PROPOSTA:
+        if payload.payload_type == PropostaCessionePayload.NUOVA_PROPOSTA:
             nuova_proposta = payload.nuova_proposta
-            address = self.PROPOSTA_CESSIONE_NAMESPACE + hashlib.sha512(str(nuova_proposta.id).encode("utf-8")).hexdigest()[0:64]
-            context.set_state({address: nuova_proposta.SerializeToString()})
+            self.set_proposta_cessione_state(nuova_proposta)
 
         # aggiornamento stato proposta    
-        elif payload.payload_type == PropostaCessionePayload.PayloadType.AGGIORNAMENTO_STATO:
+        elif payload.payload_type == PropostaCessionePayload.AGGIORNAMENTO_STATO:
             action_payload = payload.aggiornamento_stato
             proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
             proposta.stato = action_payload.nuovo_stato
+            proposta.note = action_payload.note
             self.set_proposta_cessione_state(proposta)
         
         # aggiornamento offerte proposta
-        elif payload.payload_type == PropostaCessionePayload.PayloadType.AGGIORNAMENTO_OFFERTE:
+        elif payload.payload_type == PropostaCessionePayload.AGGIORNAMENTO_OFFERTE:
             action_payload = payload.aggiornamento_offerte
-            proposta = self.get_proposta_cessione_address(action_payload.id_proposta)
+            proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
             for offerta in action_payload.offerte_aggiornate:
                 entry = proposta.documenti[offerta.id]
                 entry.Clear()
@@ -91,9 +91,9 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
             self.set_proposta_cessione_state(proposta)
 
         # aggiornamento documenti proposta
-        elif payload.payload_type == PropostaCessionePayload.PayloadType.AGGIORNAMENTO_DOCUMENTI:
+        elif payload.payload_type == PropostaCessionePayload.AGGIORNAMENTO_DOCUMENTI:
             action_payload = payload.aggiornamento_documenti
-            proposta = self.get_proposta_cessione_address(action_payload.id_proposta)
+            proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
             for doc in action_payload.documenti_aggiornati:
                 entry = proposta.documenti[doc.id]
                 entry.Clear()
@@ -101,9 +101,9 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
             self.set_proposta_cessione_state(proposta)
         
         # aggiornamento contratti proposta
-        elif payload.payload_type == PropostaCessionePayload.PayloadType.AGGIORNAMENTO_CONTRATTI:
+        elif payload.payload_type == PropostaCessionePayload.AGGIORNAMENTO_CONTRATTI:
             action_payload = payload.aggiornamento_contratti
-            proposta = self.get_proposta_cessione_address(action_payload.id_proposta)
+            proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
             for contratto in action_payload.contratti_aggiornati:
                 entry = proposta.documenti[contratto.id]
                 entry.Clear()
@@ -121,9 +121,10 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
         # TODO: aggiungere try catch 
         address = self.get_proposta_cessione_address(id)
         proposta = PropostaCessioneState()
-        return proposta.ParseFromString(self._context.get_state([address])[0].data)
+        proposta.ParseFromString(self._context.get_state([address])[0].data)
+        return proposta
     
     def set_proposta_cessione_state(self, proposta):
         # TODO: aggiungere try catch 
-        address = self.get_proposta_cessione_address(id)
+        address = self.get_proposta_cessione_address(proposta.id)
         self._context.set_state({address: proposta.SerializeToString()})
