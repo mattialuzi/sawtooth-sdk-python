@@ -59,63 +59,37 @@ class RichiestaAccreditamentoTransactionHandler(TransactionHandler):
 
         # TODO: controllare identità e permessi per le varie azioni 
         
-        # Nuova proposta
-        if payload.payload_type == PropostaCessionePayload.NUOVA_PROPOSTA:
-            action_payload = payload.nuova_proposta
+        # Nuova richiesta
+        if payload.payload_type == RichiestaAccreditamentoPayload.NUOVA_RICHIESTA:
+            action_payload = payload.nuova_richiesta
             if action_payload:
-                self.set_proposta_cessione_state(action_payload)
+                self.set_richiesta_accreditamento_state(action_payload)
             else: 
-                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.Name(payload.payload_type)))
+                raise InvalidTransaction("Payload for {} not set".format(RichiestaAccreditamentoPayload.Name(payload.payload_type)))
 
         # aggiornamento stato proposta    
-        elif payload.payload_type == PropostaCessionePayload.AGGIORNAMENTO_STATO:
+        elif payload.payload_type == RichiestaAccreditamentoPayload.AGGIORNAMENTO_STATO:
             action_payload = payload.aggiornamento_stato
             if action_payload:
-                proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
-                proposta.stato = action_payload.nuovo_stato
-                proposta.note = action_payload.note
-                self.set_proposta_cessione_state(proposta)
+                richiesta = self.get_richiesta_accreditamento_state(action_payload.id_richiesta)
+                richiesta.stato = action_payload.nuovo_stato
+                richiesta.note = action_payload.note
+                self.set_richiesta_accreditamento_state(richiesta)
             else: 
-                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.Name(payload.payload_type)))
+                raise InvalidTransaction("Payload for {} not set".format(RichiestaAccreditamentoPayload.Name(payload.payload_type)))
         
-        # aggiornamento offerte proposta
-        elif payload.payload_type == PropostaCessionePayload.AGGIORNAMENTO_OFFERTE:
-            action_payload = payload.aggiornamento_offerte
-            if action_payload:
-                proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
-                for offerta in action_payload.offerte_aggiornate:
-                    entry = proposta.offerte[offerta.id]
-                    entry.Clear()
-                    entry.CopyFrom(offerta)
-                self.set_proposta_cessione_state(proposta)
-            else: 
-                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.Name(payload.payload_type)))
-
         # aggiornamento documenti proposta
-        elif payload.payload_type == PropostaCessionePayload.AGGIORNAMENTO_DOCUMENTI:
+        elif payload.payload_type == RichiestaAccreditamentoPayload.AGGIORNAMENTO_DOCUMENTI:
             action_payload = payload.aggiornamento_documenti
             if action_payload:
-                proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
+                richiesta = self.get_richiesta_accreditamento_state(action_payload.id_richiesta)
                 for doc in action_payload.documenti_aggiornati:
-                    entry = proposta.documenti[doc.id]
+                    entry = richiesta.documenti[doc.id]
                     entry.Clear()
                     entry.CopyFrom(doc)
-                self.set_proposta_cessione_state(proposta)
+                self.set_richiesta_accreditamento_state(richiesta)
             else: 
-                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.Name(payload.payload_type)))
-        
-        # aggiornamento contratti proposta
-        elif payload.payload_type == PropostaCessionePayload.AGGIORNAMENTO_CONTRATTI:
-            action_payload = payload.aggiornamento_contratti
-            if action_payload:
-                proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
-                for contratto in action_payload.contratti_aggiornati:
-                    entry = proposta.contratti[contratto.id]
-                    entry.Clear()
-                    entry.CopyFrom(contratto)
-                self.set_proposta_cessione_state(proposta)
-            else: 
-                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.Name(payload.payload_type)))
+                raise InvalidTransaction("Payload for {} not set".format(RichiestaAccreditamentoPayload.Name(payload.payload_type)))
 
         else:
             raise InvalidTransaction("Unhandled payload type")

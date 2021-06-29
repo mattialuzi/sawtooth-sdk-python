@@ -2,6 +2,17 @@
 syntax = "proto3";
 
 message PropostaCessioneState {
+
+    enum StatoPropostaCessione {
+        PREPARAZIONE = 0;
+        PROPOSTA = 1;
+        PRESA_IN_CARICO = 2;
+        VALIDATA = 3;
+        INVALIDATA = 4;
+        CONTRATTO_DA_FIRMARE = 5;
+        CONTRATTO_FIRMATO = 6;
+    }
+
     int32 id = 1;
     TipologiaCessione tipologia = 2;
     StatoPropostaCessione stato = 3;
@@ -26,16 +37,6 @@ message PropostaCessioneState {
 enum TipologiaCessione {
     PREISTRUTTORIA = 0;
     ISTRUTTORIA = 1;
-}
-
-enum StatoPropostaCessione {
-    PREPARAZIONE = 0;
-    PROPOSTA = 1;
-    PRESA_IN_CARICO = 2;
-    VALIDATA = 3;
-    INVALIDATA = 4;
-    CONTRATTO_DA_FIRMARE = 5;
-    CONTRATTO_FIRMATO = 6;
 }
 
 enum StatoOffertaProposta {
@@ -65,7 +66,7 @@ message PropostaCessionePayload {
     // payload per aggiornare lo stato della proposta, opzionalmente si possono specificare delle note
     message AggiornamentoStato {
         int32 id_proposta = 1;
-        StatoPropostaCessione nuovo_stato = 2;
+        PropostaCessioneState.StatoPropostaCessione nuovo_stato = 2;
         string note = 3;
     }
     // payload per caricare nuove offerte o aggiornare quelle esistenti (a seconda )
@@ -102,3 +103,55 @@ message PropostaCessionePayload {
     AggiornamentoDocumenti aggiornamento_documenti = 5;
     AggiornamentoContratti aggiornamento_contratti = 6;
 }
+
+message RichiestaAccreditamentoState {
+
+    enum StatoRichiestaAccreditamento {
+        PREPARAZIONE = 0;
+        DA_VALIDARE = 1;
+        ACCREDITATO = 2;
+        NON_VALIDO = 3;
+    }
+
+    int32 id = 1;
+    StatoRichiestaAccreditamento stato = 2;
+    // Chiave pubblica cedente
+    string cedente = 3;
+    // id del gruppo acquirente a cui viene fatta la richiesta
+    int32 id_gruppo_acquirente = 4;
+    string data_creazione = 5;
+    string data_accreditamento = 6;
+    string note = 7;
+    // map<id_file_documento, sha512 documento> file documenti
+    map<int32, HashedFile> documenti = 8;
+}
+
+message RichiestaAccreditamentoPayload {
+    // payload per aggiornare lo stato della richiesta, opzionalmente si possono specificare delle note
+    message AggiornamentoStato {
+        int32 id_richiesta = 1;
+        RichiestaAccreditamentoState.StatoRichiestaAccreditamento nuovo_stato = 2;
+        string note = 3;
+    }
+    // payload per caricare nuove hash di documenti o aggiornare quelli esistenti
+    message AggiornamentoDocumenti {
+        int32 id_richiesta = 1;
+        repeated HashedFile documenti_aggiornati = 2;
+    }
+
+    enum PayloadType {
+        PAYLOAD_TYPE_UNSET = 0;
+        NUOVA_RICHIESTA = 1;
+        AGGIORNAMENTO_STATO = 2;
+        AGGIORNAMENTO_DOCUMENTI = 3;
+    }
+
+    PayloadType payload_type = 1;
+
+    // TODO: considera utilizzo oneof per questi campi 
+    RichiestaAccreditamentoState nuova_richiesta = 2;
+    AggiornamentoStato aggiornamento_stato = 3;
+    AggiornamentoDocumenti aggiornamento_documenti = 4;
+}
+
+
