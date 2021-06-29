@@ -23,22 +23,22 @@ from setuptools import setup, find_packages
 conf_dir = "/etc/sawtooth"
 
 data_files = [
-    (conf_dir, ['packaging/proposta_cessione.toml.example'])
+    (conf_dir, ['packaging/richiesta_accreditamento.toml.example'])
 ]
 
 if os.path.exists("/etc/default"):
     data_files.append(
-        ('/etc/default', ['packaging/systemd/sawtooth-proposta-cessione-tp-python']))
+        ('/etc/default', ['packaging/systemd/sawtooth-richiesta-accreditamento-tp-python']))
 
 if os.path.exists("/lib/systemd/system"):
     data_files.append(('/lib/systemd/system',
-                       ['packaging/systemd/sawtooth-proposta-cessione-tp-python']))
+                       ['packaging/systemd/sawtooth-richiesta-accreditamento-tp-python']))
 
 setup(
-    name='sawtooth-proposta-cessione',
+    name='sawtooth-richiesta-accreditamento',
     version=subprocess.check_output(
         ['../../bin/get_version']).decode('utf-8').strip(),
-    description='Transactor Family per Proposta di Cessione del Credito per il superbonus 110',
+    description='Transactor Family per Richiesta di accreditamento per cessione del credito con il superbonus 110',
     author='Giacomo Giuliani, Mattia Luzi',
     url='https://github.com/mattialuzi/sawtooth-sdk-python',
     packages=find_packages(),
@@ -53,6 +53,6 @@ setup(
     entry_points={
         'console_scripts': [
             # 'xo = sawtooth_xo.xo_cli:main_wrapper',
-            'proposta-cessione-tp-python = sawtooth_proposta_cessione.processor.main:main',
+            'richiesta-accreditamento-tp-python = sawtooth_richiesta_accreditamento.processor.main:main',
         ]
     })
