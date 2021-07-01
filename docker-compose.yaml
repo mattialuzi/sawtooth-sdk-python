@@ -75,6 +75,30 @@ services:
       "
     stop_signal: SIGKILL
 
+  richiesta-accreditamento-tp-python:
+    build:
+      context: .
+      dockerfile: examples/richiesta_accreditamento_python/Dockerfile
+      args:
+        - http_proxy
+        - https_proxy
+        - no_proxy
+    image: richiesta-accreditamento-tp-python-local:${ISOLATION_ID}
+    volumes:
+      - ./:/project/sawtooth-sdk-python
+    container_name: richiesta-accreditamento-tp-python-local
+    depends_on:
+      - validator
+    command: |
+      bash -c "
+        bin/protogen
+        cd ../examples/richiesta_accreditamento_python
+        python3 setup.py clean --all
+        python3 setup.py build
+        richiesta-accreditamento-tp-python -vv -C tcp://validator:4004
+      "
+    stop_signal: SIGKILL
+
   # xo-tp-python:
   #   build:
   #     context: .
