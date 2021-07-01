@@ -67,18 +67,19 @@ class RichiestaAccreditamentoTransactionHandler(TransactionHandler):
             else: 
                 raise InvalidTransaction("Payload for {} not set".format(RichiestaAccreditamentoPayload.Name(payload.payload_type)))
 
-        # aggiornamento stato proposta    
+        # aggiornamento stato richiesta    
         elif payload.payload_type == RichiestaAccreditamentoPayload.AGGIORNAMENTO_STATO:
             action_payload = payload.aggiornamento_stato
             if action_payload:
                 richiesta = self.get_richiesta_accreditamento_state(action_payload.id_richiesta)
                 richiesta.stato = action_payload.nuovo_stato
                 richiesta.note = action_payload.note
+                richiesta.data_accreditamento = action_payload.data_accreditamento
                 self.set_richiesta_accreditamento_state(richiesta)
             else: 
                 raise InvalidTransaction("Payload for {} not set".format(RichiestaAccreditamentoPayload.Name(payload.payload_type)))
         
-        # aggiornamento documenti proposta
+        # aggiornamento documenti richiesta
         elif payload.payload_type == RichiestaAccreditamentoPayload.AGGIORNAMENTO_DOCUMENTI:
             action_payload = payload.aggiornamento_documenti
             if action_payload:

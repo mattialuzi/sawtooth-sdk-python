@@ -132,6 +132,7 @@ message RichiestaAccreditamentoPayload {
         int32 id_richiesta = 1;
         RichiestaAccreditamentoState.StatoRichiestaAccreditamento nuovo_stato = 2;
         string note = 3;
+        string data_accreditamento = 4;
     }
     // payload per caricare nuove hash di documenti o aggiornare quelli esistenti
     message AggiornamentoDocumenti {
