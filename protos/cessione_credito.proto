@@ -16,8 +16,8 @@ message PropostaCessioneState {
     int32 id = 1;
     TipologiaCessione tipologia = 2;
     StatoPropostaCessione stato = 3;
-    // Chiave pubblica cedente
-    string cedente = 4;
+    // id del cedente
+    int32 id_cedente = 4;
     // id del gruppo acquirente che ha ottenuto la cessione
     int32 id_gruppo_acquirente = 5;
     string data_creazione = 6;
@@ -35,8 +35,8 @@ message PropostaCessioneState {
 }
 
 enum TipologiaCessione {
-    PREISTRUTTORIA = 0;
-    ISTRUTTORIA = 1;
+    PREISTRUTTORIA_110 = 0;
+    ISTRUTTORIA_110 = 1;
 }
 
 enum StatoOffertaProposta {
@@ -115,8 +115,8 @@ message RichiestaAccreditamentoState {
 
     int32 id = 1;
     StatoRichiestaAccreditamento stato = 2;
-    // Chiave pubblica cedente
-    string cedente = 3;
+    // id del cedente
+    int32 id_cedente = 3;
     // id del gruppo acquirente a cui viene fatta la richiesta
     int32 id_gruppo_acquirente = 4;
     string data_creazione = 5;
@@ -155,4 +155,16 @@ message RichiestaAccreditamentoPayload {
     AggiornamentoDocumenti aggiornamento_documenti = 4;
 }
 
+message Utente {
 
+    enum Ruolo {
+        CEDENTE = 0;
+        ACQUIRENTE = 1;
+        REVISORE_FISCALE = 2;
+    }
+
+    string public_key = 1;
+    int32 id = 2;
+    Ruolo ruolo = 3;
+    int32 id_gruppo_acquirente = 4;
+}

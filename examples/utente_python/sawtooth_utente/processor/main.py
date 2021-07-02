@@ -18,14 +18,14 @@ import os
 import argparse
 import pkg_resources
 
-from sawtooth_richiesta_accreditamento.processor.handler import RichiestaAccreditamentoTransactionHandler
-from sawtooth_richiesta_accreditamento.processor.config.richiesta_accreditamento import RichiestaAccreditamentoConfig
-from sawtooth_richiesta_accreditamento.processor.config.richiesta_accreditamento import \
-    load_default_richiesta_accreditamento_config
-from sawtooth_richiesta_accreditamento.processor.config.richiesta_accreditamento import \
-    load_toml_richiesta_accreditamento_config
-from sawtooth_richiesta_accreditamento.processor.config.richiesta_accreditamento import \
-    merge_richiesta_accreditamento_config
+from sawtooth_utente.processor.handler import UtenteTransactionHandler
+from sawtooth_utente.processor.config.utente import UtenteConfig
+from sawtooth_utente.processor.config.utente import \
+    load_default_utente_config
+from sawtooth_utente.processor.config.utente import \
+    load_toml_utente_config
+from sawtooth_utente.processor.config.utente import \
+    merge_utente_config
 
 from sawtooth_sdk.processor.core import TransactionProcessor
 from sawtooth_sdk.processor.log import init_console_logging
@@ -35,7 +35,7 @@ from sawtooth_sdk.processor.config import get_log_dir
 from sawtooth_sdk.processor.config import get_config_dir
 
 
-DISTRIBUTION_NAME = 'sawtooth-richiesta-accreditamento'
+DISTRIBUTION_NAME = 'sawtooth-utente'
 
 
 def parse_args(args):
@@ -66,19 +66,19 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-def load_richiesta_accreditamento_config(first_config):
-    default_richiesta_accreditamento_config = \
-        load_default_richiesta_accreditamento_config()
-    conf_file = os.path.join(get_config_dir(), 'richiesta_accreditamento.toml')
+def load_utente_config(first_config):
+    default_utente_config = \
+        load_default_utente_config()
+    conf_file = os.path.join(get_config_dir(), 'utente.toml')
 
-    toml_config = load_toml_richiesta_accreditamento_config(conf_file)
+    toml_config = load_toml_utente_config(conf_file)
 
-    return merge_richiesta_accreditamento_config(
-        configs=[first_config, toml_config, default_richiesta_accreditamento_config])
+    return merge_utente_config(
+        configs=[first_config, toml_config, default_utente_config])
 
 
-def create_richiesta_accreditamento_config(args):
-    return RichiestaAccreditamentoConfig(connect=args.connect)
+def create_utente_config(args):
+    return UtenteConfig(connect=args.connect)
 
 
 def main(args=None):
@@ -87,14 +87,14 @@ def main(args=None):
     opts = parse_args(args)
     processor = None
     try:
-        arg_config = create_richiesta_accreditamento_config(opts)
-        richiesta_accreditamento_config = load_richiesta_accreditamento_config(arg_config)
-        processor = TransactionProcessor(url=richiesta_accreditamento_config.connect)
-        log_config = get_log_config(filename="richiesta_accreditamento_log_config.toml")
+        arg_config = create_utente_config(opts)
+        utente_config = load_utente_config(arg_config)
+        processor = TransactionProcessor(url=utente_config.connect)
+        log_config = get_log_config(filename="utente_log_config.toml")
 
         # If no toml, try loading yaml
         if log_config is None:
-            log_config = get_log_config(filename="richiesta_accreditamento_log_config.yaml")
+            log_config = get_log_config(filename="utente_log_config.yaml")
 
         if log_config is not None:
             log_configuration(log_config=log_config)
@@ -103,11 +103,11 @@ def main(args=None):
             # use the transaction processor zmq identity for filename
             log_configuration(
                 log_dir=log_dir,
-                name="richiesta-accreditamento-" + str(processor.zmq_id)[2:-1])
+                name="utente-" + str(processor.zmq_id)[2:-1])
 
         init_console_logging(verbose_level=opts.verbose)
 
-        handler = RichiestaAccreditamentoTransactionHandler()
+        handler = UtenteTransactionHandler()
 
         processor.add_handler(handler)
         processor.start()
