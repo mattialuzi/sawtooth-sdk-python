@@ -56,22 +56,19 @@ class UtenteTransactionHandler(TransactionHandler):
         except Exception:
             raise InvalidTransaction("Invalid payload serialization")
 
-        # TODO: controllare identità e permessi per le varie azioni 
         self.set_utente_state(nuovo_utente)
 
     def get_utente_address(self, public_key):
         return self.UTENTE_NAMESPACE + hashlib.sha512(str(public_key).encode("utf-8")).hexdigest()[0:64]
     
-    def get_utente_state(self, utente):
-        address = self.get_utente_address(utente.public_key)
+    def get_utente_state(self, public_key):
+        address = self.get_utente_address(public_key)
         utente = Utente()
         try:
             utente.ParseFromString(self._context.get_state([address])[0].data)
             return utente
         except IndexError:
             raise InvalidTransaction('No data at address: {}'.format(address))
-        except Exception as e:
-            raise InternalError('Failed to load state data') from e
     
     def set_utente_state(self, utente):
         # TODO: aggiungere try catch 

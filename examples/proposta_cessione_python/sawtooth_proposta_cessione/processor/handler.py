@@ -27,6 +27,8 @@ from sawtooth_sdk.processor.exceptions import InternalError
 
 from sawtooth_sdk.protobuf.cessione_credito_pb2 import PropostaCessionePayload
 from sawtooth_sdk.protobuf.cessione_credito_pb2 import PropostaCessioneState
+from sawtooth_sdk.protobuf.cessione_credito_pb2 import Utente
+
 
 
 LOGGER = logging.getLogger(__name__)
@@ -46,6 +48,8 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
 
     PROPOSTA_CESSIONE_NAMESPACE = hashlib.sha512('proposta_cessione'.encode("utf-8")).hexdigest()[0:6]
 
+    UTENTE_NAMESPACE = hashlib.sha512('utente'.encode("utf-8")).hexdigest()[0:6]
+
     @property
     def namespaces(self):
         return [self.PROPOSTA_CESSIONE_NAMESPACE]
@@ -54,7 +58,7 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
         
         self._context = context
         header = transaction.header
-        # signer = header.signer_public_key
+        signer = header.signer_public_key
 
         payload = PropostaCessionePayload()
         try:
@@ -62,65 +66,74 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
         except Exception:
             raise InvalidTransaction("Invalid payload serialization")
 
-        # TODO: controllare identità e permessi per le varie azioni 
-        
+        # ottiene le informazioni dell'utente che sta eseguendo la transazione 
+        utente = self.get_utente_state(signer)
+
         # Nuova proposta
         if payload.payload_type == PropostaCessionePayload.NUOVA_PROPOSTA:
-            action_payload = payload.nuova_proposta
-            if action_payload:
+            if payload.HasField('nuova_proposta'):
+                action_payload = payload.nuova_proposta
+                self.check_utente_authorization(utente, [Utente.CEDENTE], id=action_payload.id_cedente)
                 self.set_proposta_cessione_state(action_payload)
             else: 
-                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.Name(payload.payload_type)))
+                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.PayloadType.Name(payload.payload_type)))
 
         # aggiornamento stato proposta    
         elif payload.payload_type == PropostaCessionePayload.AGGIORNAMENTO_STATO:
-            action_payload = payload.aggiornamento_stato
-            if action_payload:
+            if payload.HasField('aggiornamento_stato'):
+                action_payload = payload.aggiornamento_stato
                 proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
+                # TODO: controllare se il ruolo utente è autorizzato a seconda dello stato da aggiornare 
                 proposta.stato = action_payload.nuovo_stato
                 proposta.note = action_payload.note
+                # TODO: aggiungere l'id gruppo acquirente da aggiornare quando uno gruppo si aggiudica la proposta 
                 self.set_proposta_cessione_state(proposta)
             else: 
-                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.Name(payload.payload_type)))
+                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.PayloadType.Name(payload.payload_type)))
         
         # aggiornamento offerte proposta
         elif payload.payload_type == PropostaCessionePayload.AGGIORNAMENTO_OFFERTE:
-            action_payload = payload.aggiornamento_offerte
-            if action_payload:
+            if payload.HasField('aggiornamento_offerte'):
+                action_payload = payload.aggiornamento_offerte
                 proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
+                # TODO: controllare se il ruolo utente è autorizzato a seconda dello stato da aggiornare 
+                # TODO: controllare che lo stato della proposta sia in preparazione, 
+                # negli stati successivi le offerte non devono porter essere modificate 
                 for offerta in action_payload.offerte_aggiornate:
                     entry = proposta.offerte[offerta.id]
                     entry.Clear()
                     entry.CopyFrom(offerta)
                 self.set_proposta_cessione_state(proposta)
             else: 
-                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.Name(payload.payload_type)))
+                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.PayloadType.Name(payload.payload_type)))
 
         # aggiornamento documenti proposta
         elif payload.payload_type == PropostaCessionePayload.AGGIORNAMENTO_DOCUMENTI:
-            action_payload = payload.aggiornamento_documenti
-            if action_payload:
+            if payload.HasField('aggiornamento_documenti'):
+                action_payload = payload.aggiornamento_documenti
                 proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
+                self.check_utente_authorization(utente, [Utente.CEDENTE], id=proposta.id_cedente)
                 for doc in action_payload.documenti_aggiornati:
                     entry = proposta.documenti[doc.id]
                     entry.Clear()
                     entry.CopyFrom(doc)
                 self.set_proposta_cessione_state(proposta)
             else: 
-                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.Name(payload.payload_type)))
+                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.PayloadType.Name(payload.payload_type)))
         
         # aggiornamento contratti proposta
         elif payload.payload_type == PropostaCessionePayload.AGGIORNAMENTO_CONTRATTI:
-            action_payload = payload.aggiornamento_contratti
-            if action_payload:
+            if payload.HasField('aggiornamento_contratti'):
+                action_payload = payload.aggiornamento_contratti
                 proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
+                self.check_utente_authorization(utente, [Utente.CEDENTE], id=proposta.id_cedente)
                 for contratto in action_payload.contratti_aggiornati:
                     entry = proposta.contratti[contratto.id]
                     entry.Clear()
                     entry.CopyFrom(contratto)
                 self.set_proposta_cessione_state(proposta)
             else: 
-                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.Name(payload.payload_type)))
+                raise InvalidTransaction("Payload for {} not set".format(PropostaCessionePayload.PayloadType.Name(payload.payload_type)))
 
         else:
             raise InvalidTransaction("Unhandled payload type")
@@ -146,3 +159,24 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
         addresses = self._context.set_state({address: proposta.SerializeToString()})
         if not addresses:
             raise InternalError('State error')
+
+    def check_utente_authorization(self, utente, ruoli, id = None, id_gruppo_acquirente = None):
+        if ruoli and not any(utente.ruolo == ruolo for ruolo in ruoli):
+            raise InvalidTransaction("Ruolo utente {} non autorizzato a eseguire la transazione".format(Utente.Ruolo.Name(utente.ruolo)))
+        if id and utente.id != id:
+            raise InvalidTransaction("Utente non autorizzato a eseguire la transazione")
+        if id_gruppo_acquirente and utente.id_gruppo_acquirente != id_gruppo_acquirente:
+            raise InvalidTransaction("Il gruppo acquirente dell'utente non è autorizzatao a eseguire la transazione")
+        return utente
+
+    def get_utente_address(self, public_key):
+        return self.UTENTE_NAMESPACE + hashlib.sha512(str(public_key).encode("utf-8")).hexdigest()[0:64]
+    
+    def get_utente_state(self, public_key):
+        address = self.get_utente_address(public_key)
+        utente = Utente()
+        try:
+            utente.ParseFromString(self._context.get_state([address])[0].data)
+            return utente
+        except IndexError:
+            raise InvalidTransaction("Utente non registrato")

@@ -61,28 +61,28 @@ class RichiestaAccreditamentoTransactionHandler(TransactionHandler):
         
         # Nuova richiesta
         if payload.payload_type == RichiestaAccreditamentoPayload.NUOVA_RICHIESTA:
-            action_payload = payload.nuova_richiesta
-            if action_payload:
+            if payload.HasField('nuova_richiesta'):
+                action_payload = payload.nuova_richiesta
                 self.set_richiesta_accreditamento_state(action_payload)
             else: 
-                raise InvalidTransaction("Payload for {} not set".format(RichiestaAccreditamentoPayload.Name(payload.payload_type)))
+                raise InvalidTransaction("Payload for {} not set".format(RichiestaAccreditamentoPayload.PayloadType.Name(payload.payload_type)))
 
         # aggiornamento stato richiesta    
         elif payload.payload_type == RichiestaAccreditamentoPayload.AGGIORNAMENTO_STATO:
-            action_payload = payload.aggiornamento_stato
-            if action_payload:
+            if payload.HasField('aggiornamento_stato'):
+                action_payload = payload.aggiornamento_stato
                 richiesta = self.get_richiesta_accreditamento_state(action_payload.id_richiesta)
                 richiesta.stato = action_payload.nuovo_stato
                 richiesta.note = action_payload.note
                 richiesta.data_accreditamento = action_payload.data_accreditamento
                 self.set_richiesta_accreditamento_state(richiesta)
             else: 
-                raise InvalidTransaction("Payload for {} not set".format(RichiestaAccreditamentoPayload.Name(payload.payload_type)))
+                raise InvalidTransaction("Payload for {} not set".format(RichiestaAccreditamentoPayload.PayloadType.Name(payload.payload_type)))
         
         # aggiornamento documenti richiesta
         elif payload.payload_type == RichiestaAccreditamentoPayload.AGGIORNAMENTO_DOCUMENTI:
-            action_payload = payload.aggiornamento_documenti
-            if action_payload:
+            if payload.HasField('aggiornamento_documenti'):
+                action_payload = payload.aggiornamento_documenti
                 richiesta = self.get_richiesta_accreditamento_state(action_payload.id_richiesta)
                 for doc in action_payload.documenti_aggiornati:
                     entry = richiesta.documenti[doc.id]
@@ -90,7 +90,7 @@ class RichiestaAccreditamentoTransactionHandler(TransactionHandler):
                     entry.CopyFrom(doc)
                 self.set_richiesta_accreditamento_state(richiesta)
             else: 
-                raise InvalidTransaction("Payload for {} not set".format(RichiestaAccreditamentoPayload.Name(payload.payload_type)))
+                raise InvalidTransaction("Payload for {} not set".format(RichiestaAccreditamentoPayload.PayloadType.Name(payload.payload_type)))
 
         else:
             raise InvalidTransaction("Unhandled payload type")
@@ -107,8 +107,6 @@ class RichiestaAccreditamentoTransactionHandler(TransactionHandler):
             return richiesta
         except IndexError:
             raise InvalidTransaction('No data at address: {}'.format(address))
-        except Exception as e:
-            raise InternalError('Failed to load state data') from e
     
     def set_richiesta_accreditamento_state(self, richiesta):
         # TODO: aggiungere try catch 
