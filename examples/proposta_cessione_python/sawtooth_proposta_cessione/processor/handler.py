@@ -125,12 +125,12 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
                 if proposta.stato != PropostaCessioneState.PREPARAZIONE:
                     raise InvalidTransaction("Le offerte possono essere modficate solo quando la proposta è nello stato PREPARAZIONE")
  
-                id = proposta.id_cedente if utente.ruolo == Utente.CEDENTE else None
-                id_gruppo_acquirente = None
-                if any(utente.ruolo == ruolo for ruolo in [Utente.ACQUIRENTE, Utente.REVISORE_FISCALE]): 
-                    id_gruppo_acquirente = proposta.id_gruppo_acquirente
-                
+                is_cedente = utente.ruolo == Utente.CEDENTE
+                is_gruppo_acquirente = any(utente.ruolo == ruolo for ruolo in [Utente.ACQUIRENTE, Utente.REVISORE_FISCALE])
+
                 for offerta in action_payload.offerte_aggiornate:
+                    id = proposta.id_cedente if is_cedente else None
+                    id_gruppo_acquirente = offerta.id_gruppo_acquirente if is_gruppo_acquirente else None
                     self.check_utente_authorization(utente, self.STATI_OFFERTA_RUOLI[offerta.stato], id, id_gruppo_acquirente)
                     entry = proposta.offerte[offerta.id]
                     entry.Clear()
@@ -193,13 +193,12 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
             raise InternalError('Failed to load state data') from e
     
     def set_proposta_cessione_state(self, proposta):
-        # TODO: aggiungere try catch 
         address = self.get_proposta_cessione_address(proposta.id)
         addresses = self._context.set_state({address: proposta.SerializeToString()})
         if not addresses:
             raise InternalError('State error')
 
-    def check_utente_authorization(self, utente, ruoli, id = None, id_gruppo_acquirente = None):
+    def check_utente_authorization(self, utente, ruoli = None, id = None, id_gruppo_acquirente = None):
         if ruoli and not any(utente.ruolo == ruolo for ruolo in ruoli):
             raise InvalidTransaction("Ruolo utente {} non autorizzato a eseguire la transazione".format(Utente.Ruolo.Name(utente.ruolo)))
         if id and utente.id != id:
