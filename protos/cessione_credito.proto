@@ -11,6 +11,8 @@ message PropostaCessioneState {
         INVALIDATA = 4;
         CONTRATTO_DA_FIRMARE = 5;
         CONTRATTO_FIRMATO = 6;
+        DA_LIQUIDARE = 7;
+        LIQUIDATA = 8;
     }
 
     int32 id = 1;

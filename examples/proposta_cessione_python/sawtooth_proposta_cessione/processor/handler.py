@@ -64,14 +64,16 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
         PropostaCessioneState.VALIDATA: [Utente.ACQUIRENTE, Utente.REVISORE_FISCALE],
         PropostaCessioneState.CONTRATTO_DA_FIRMARE: [Utente.ACQUIRENTE],
         PropostaCessioneState.CONTRATTO_FIRMATO: [Utente.CEDENTE],
+        PropostaCessioneState.DA_LIQUIDARE: [Utente.ACQUIRENTE],
+        PropostaCessioneState.LIQUIDATA: [Utente.ACQUIRENTE]
     }
 
     STATI_OFFERTA_RUOLI = {
-        StatoOffertaProposta.PROPOSTA_CEDENTE: [Utente.CEDENTE],
-        StatoOffertaProposta.PROPOSTA_ACQUIRENTE: [Utente.ACQUIRENTE],
-        StatoOffertaProposta.ACETTATA: [Utente.CEDENTE],
-        StatoOffertaProposta.RIFIUTATA: [Utente.CEDENTE],
-        StatoOffertaProposta.CANCELLATA: [Utente.CEDENTE]
+        StatoOffertaProposta.Value('PROPOSTA_CEDENTE'): [Utente.CEDENTE],
+        StatoOffertaProposta.Value('PROPOSTA_ACQUIRENTE'): [Utente.ACQUIRENTE],
+        StatoOffertaProposta.Value('ACETTATA'): [Utente.CEDENTE],
+        StatoOffertaProposta.Value('RIFIUTATA'): [Utente.CEDENTE],
+        StatoOffertaProposta.Value('CANCELLATA'): [Utente.CEDENTE]
     }
     
     def apply(self, transaction, context):
@@ -103,11 +105,13 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
             if payload.HasField('aggiornamento_stato'):
                 action_payload = payload.aggiornamento_stato
                 proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
+
                 id = proposta.id_cedente if utente.ruolo == Utente.CEDENTE else None
                 id_gruppo_acquirente = None
                 if any(utente.ruolo == ruolo for ruolo in [Utente.ACQUIRENTE, Utente.REVISORE_FISCALE]): 
                     id_gruppo_acquirente = proposta.id_gruppo_acquirente
                 self.check_utente_authorization(utente, self.STATI_PROPOSTA_RUOLI[action_payload.nuovo_stato], id, id_gruppo_acquirente) 
+                
                 proposta.stato = action_payload.nuovo_stato
                 proposta.note = action_payload.note
                 # TODO: aggiungere l'id gruppo acquirente da aggiornare quando uno gruppo si aggiudica la proposta 
@@ -129,9 +133,11 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
                 is_gruppo_acquirente = any(utente.ruolo == ruolo for ruolo in [Utente.ACQUIRENTE, Utente.REVISORE_FISCALE])
 
                 for offerta in action_payload.offerte_aggiornate:
+
                     id = proposta.id_cedente if is_cedente else None
                     id_gruppo_acquirente = offerta.id_gruppo_acquirente if is_gruppo_acquirente else None
                     self.check_utente_authorization(utente, self.STATI_OFFERTA_RUOLI[offerta.stato], id, id_gruppo_acquirente)
+
                     entry = proposta.offerte[offerta.id]
                     entry.Clear()
                     entry.CopyFrom(offerta)
@@ -146,8 +152,11 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
                 action_payload = payload.aggiornamento_documenti
                 proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
 
-                # TODO: considera il caso del bonifico (che carica l'acquirente)
-                self.check_utente_authorization(utente, [Utente.CEDENTE], id=proposta.id_cedente)
+                id = proposta.id_cedente if utente.ruolo == Utente.CEDENTE else None
+                id_gruppo_acquirente = None
+                if any(utente.ruolo == ruolo for ruolo in [Utente.ACQUIRENTE, Utente.REVISORE_FISCALE]): 
+                    id_gruppo_acquirente = proposta.id_gruppo_acquirente
+                self.check_utente_authorization(utente, [Utente.CEDENTE, Utente.ACQUIRENTE], id, id_gruppo_acquirente) 
                 
                 for doc in action_payload.documenti_aggiornati:
                     entry = proposta.documenti[doc.id]
@@ -163,6 +172,7 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
             if payload.HasField('aggiornamento_contratti'):
                 action_payload = payload.aggiornamento_contratti
                 proposta = self.get_proposta_cessione_state(action_payload.id_proposta)
+
                 self.check_utente_authorization(utente, [Utente.CEDENTE], id=proposta.id_cedente)
 
                 for contratto in action_payload.contratti_aggiornati:
@@ -204,7 +214,7 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
         if id and utente.id != id:
             raise InvalidTransaction("Utente non autorizzato a eseguire la transazione")
         if id_gruppo_acquirente and utente.id_gruppo_acquirente != id_gruppo_acquirente:
-            raise InvalidTransaction("Il gruppo acquirente dell'utente non è autorizzato a eseguire la transazione")
+            raise InvalidTransaction("Gruppo acquirente dell'utente non autorizzato a eseguire la transazione")
         return utente
 
     def get_utente_address(self, public_key):
