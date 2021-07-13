@@ -8,11 +8,12 @@ message PropostaCessioneState {
         PROPOSTA = 1;
         PRESA_IN_CARICO = 2;
         VALIDATA = 3;
-        INVALIDATA = 4;
-        CONTRATTO_DA_FIRMARE = 5;
-        CONTRATTO_FIRMATO = 6;
-        DA_LIQUIDARE = 7;
-        LIQUIDATA = 8;
+        ACQUISTATA = 4;
+        INVALIDATA = 5;
+        CONTRATTO_DA_FIRMARE = 6;
+        CONTRATTO_FIRMATO = 7;
+        DA_LIQUIDARE = 8;
+        LIQUIDATA = 9;
     }
 
     int32 id = 1;
@@ -20,20 +21,27 @@ message PropostaCessioneState {
     StatoPropostaCessione stato = 3;
     // id del cedente
     int32 id_cedente = 4;
-    // id del gruppo acquirente che ha ottenuto la cessione
+    // id del gruppo acquirente 
     int32 id_gruppo_acquirente = 5;
-    string data_creazione = 6;
-    string note = 7;
+    // se la proposta è gestita con meccanismo di borsa credito o meno
+    bool borsa_credito = 6;
+    // id dell'acquirente che si aggiudica la proposta (caso borsa del credito)
+    int32 id_acquirente_borsa = 7;
+    string data_creazione = 8;
+    string note = 9;
     // valore in cent di €
-    uint32 importo_totale = 8;
+    uint32 importo_totale = 10;
     // valore in cent di € 
-    uint32 credito_totale = 9;
+    uint32 credito_totale = 11;
+
     // map<id_offerta, offerta> offerte
-    map<int32, OffertaProposta> offerte = 10;
+    map<int32, OffertaProposta> offerte = 12;
     // map<id_file_documento, sha512 documento> file documenti
-    map<int32, HashedFile> documenti = 11;
+    map<int32, HashedFile> documenti = 13;
      // map<id_file_contratto, sha512 contratto> file contratti
-    map<int32, HashedFile> contratti = 12;
+    map<int32, HashedFile> contratti = 14;
+    // map<id_file_bonifico, sha512 bonifico> file bonifici
+    map<int32, HashedFile> bonifici = 15;
 }
 
 enum TipologiaCessione {
@@ -42,16 +50,14 @@ enum TipologiaCessione {
 }
 
 enum StatoOffertaProposta {
-    PROPOSTA_CEDENTE = 0;
-    PROPOSTA_ACQUIRENTE = 1;
-    ACETTATA = 2;
-    RIFIUTATA = 3;
-    CANCELLATA = 4;
+    DA_VALUTARE = 0;
+    ACETTATA = 1;
+    RIFIUTATA = 2;
 }
 
 message OffertaProposta {
     int32 id = 1;
-    int32 id_gruppo_acquirente = 2;
+    int32 id_acquirente = 2;
     StatoOffertaProposta stato = 3;
     // entità dell'offerta in cent di €
     uint32 valore = 4;
@@ -70,40 +76,53 @@ message PropostaCessionePayload {
         int32 id_proposta = 1;
         PropostaCessioneState.StatoPropostaCessione nuovo_stato = 2;
         string note = 3;
+        int32 id_acquirente_borsa = 4;
     }
     // payload per caricare nuove offerte o aggiornare quelle esistenti (a seconda )
     message AggiornamentoOfferte {
         int32 id_proposta = 1;
         repeated OffertaProposta offerte_aggiornate = 2;
     }
-    // payload per caricare nuove hash di documenti o aggiornare quelli esistenti
-    message AggiornamentoDocumenti {
+    // // payload per caricare nuove hash di documenti o aggiornare quelli esistenti
+    // message AggiornamentoDocumenti {
+    //     int32 id_proposta = 1;
+    //     repeated HashedFile documenti_aggiornati = 2;
+    // }
+    // // payload per caricare nuove hash di contratti o aggiornare quelli esistenti
+    // message AggiornamentoContratti {
+    //     int32 id_proposta = 1;
+    //     repeated HashedFile contratti_aggiornati = 2;
+    // }
+    // payload per caricare nuove hash di file o aggiornare quelli esistenti
+    message EliminazioneOfferte {
         int32 id_proposta = 1;
-        repeated HashedFile documenti_aggiornati = 2;
+        repeated int32 id_offerte = 2;
     }
-    // payload per caricare nuove hash di contratti o aggiornare quelli esistenti
-    message AggiornamentoContratti {
+
+    message AggiornamentoFile {
         int32 id_proposta = 1;
-        repeated HashedFile contratti_aggiornati = 2;
+        repeated HashedFile file_aggiornati = 2;
     }
 
     enum PayloadType {
         PAYLOAD_TYPE_UNSET = 0;
-        NUOVA_PROPOSTA = 1;
+        CERAZIONE_PROPOSTA = 1;
         AGGIORNAMENTO_STATO = 2;
         AGGIORNAMENTO_OFFERTE = 3;
         AGGIORNAMENTO_DOCUMENTI = 4;
         AGGIORNAMENTO_CONTRATTI = 5;
+        ELIMINAZIONE_OFFERTE = 6;
     }
 
-    PayloadType payload_type = 1;
-
+    PayloadType type = 1;
+    bytes data = 2;
     // TODO: considera utilizzo oneof per questi campi 
-    PropostaCessioneState nuova_proposta = 2;
-    AggiornamentoStato aggiornamento_stato = 3;
-    AggiornamentoOfferte aggiornamento_offerte = 4;
-    AggiornamentoDocumenti aggiornamento_documenti = 5;
-    AggiornamentoContratti aggiornamento_contratti = 6;
+    // PropostaCessioneState nuova_proposta = 2;
+    // AggiornamentoStato aggiornamento_stato = 3;
+    // AggiornamentoOfferte aggiornamento_offerte = 4;
+    // AggiornamentoFile aggiornamento_documenti = 5;
+    // AggiornamentoFile aggiornamento_contratti = 6;
+    // AggiornamentoFile aggiornamento_bonifici = 7;
 }
 
 message RichiestaAccreditamentoState {
@@ -121,11 +140,13 @@ message RichiestaAccreditamentoState {
     int32 id_cedente = 3;
     // id del gruppo acquirente a cui viene fatta la richiesta
     int32 id_gruppo_acquirente = 4;
-    string data_creazione = 5;
-    string data_accreditamento = 6;
-    string note = 7;
+    // se la richiesta è per accreditarsi alla borsa del credito
+    bool borsa_credito = 5;
+    string data_creazione = 6;
+    string data_accreditamento = 7;
+    string note = 8;
     // map<id_file_documento, sha512 documento> file documenti
-    map<int32, HashedFile> documenti = 8;
+    map<int32, HashedFile> documenti = 9;
 }
 
 message RichiestaAccreditamentoPayload {
@@ -136,25 +157,33 @@ message RichiestaAccreditamentoPayload {
         string note = 3;
         string data_accreditamento = 4;
     }
+    
     // payload per caricare nuove hash di documenti o aggiornare quelli esistenti
-    message AggiornamentoDocumenti {
+    // message AggiornamentoDocumenti {
+    //     int32 id_richiesta = 1;
+    //     repeated HashedFile documenti_aggiornati = 2;
+    // }
+
+    // payload per caricare nuove hash di file o aggiornare quelli esistenti
+    message AggiornamentoFile {
         int32 id_richiesta = 1;
-        repeated HashedFile documenti_aggiornati = 2;
+        repeated HashedFile file_aggiornati = 2;
     }
 
     enum PayloadType {
         PAYLOAD_TYPE_UNSET = 0;
-        NUOVA_RICHIESTA = 1;
+        CREAZIONE_RICHIESTA = 1;
         AGGIORNAMENTO_STATO = 2;
         AGGIORNAMENTO_DOCUMENTI = 3;
     }
 
-    PayloadType payload_type = 1;
+    PayloadType type = 1;
+    bytes data = 2;
 
     // TODO: considera utilizzo oneof per questi campi 
-    RichiestaAccreditamentoState nuova_richiesta = 2;
-    AggiornamentoStato aggiornamento_stato = 3;
-    AggiornamentoDocumenti aggiornamento_documenti = 4;
+    // RichiestaAccreditamentoState nuova_richiesta = 2;
+    // AggiornamentoStato aggiornamento_stato = 3;
+    // AggiornamentoDocumenti aggiornamento_documenti = 4;
 }
 
 message Utente {
@@ -162,7 +191,8 @@ message Utente {
     enum Ruolo {
         CEDENTE = 0;
         ACQUIRENTE = 1;
-        REVISORE_FISCALE = 2;
+        VALIDATORE = 2;
+        REVISORE_FISCALE = 3;
     }
 
     string public_key = 1;

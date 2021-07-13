@@ -50,8 +50,8 @@ class RichiestaAccreditamentoTransactionHandler(TransactionHandler):
     STATI_RICHIESTA_RUOLI = {
         RichiestaAccreditamentoState.PREPARAZIONE: [Utente.CEDENTE],
         RichiestaAccreditamentoState.DA_VALIDARE: [Utente.CEDENTE],
-        RichiestaAccreditamentoState.ACCREDITATO: [Utente.ACQUIRENTE],
-        RichiestaAccreditamentoState.NON_VALIDO: [Utente.ACQUIRENTE],
+        RichiestaAccreditamentoState.ACCREDITATO: [Utente.ACQUIRENTE, Utente.VALIDATORE],
+        RichiestaAccreditamentoState.NON_VALIDO: [Utente.ACQUIRENTE, Utente.VALIDATORE],
     }
     
     def apply(self, transaction, context):
@@ -70,46 +70,51 @@ class RichiestaAccreditamentoTransactionHandler(TransactionHandler):
         utente = self.get_utente_state(signer) 
         
         # Nuova richiesta
-        if payload.payload_type == RichiestaAccreditamentoPayload.NUOVA_RICHIESTA:
-            if payload.HasField('nuova_richiesta'):
-                action_payload = payload.nuova_richiesta
-                self.check_utente_authorization(utente, [Utente.CEDENTE], id=action_payload.id_cedente)
-                self.set_richiesta_accreditamento_state(action_payload)
-            else: 
-                raise InvalidTransaction("Payload for {} not set".format(RichiestaAccreditamentoPayload.PayloadType.Name(payload.payload_type)))
+        if payload.type == RichiestaAccreditamentoPayload.CREAZIONE_RICHIESTA:
+            payload_data = RichiestaAccreditamentoState()
+            try:
+                payload_data.ParseFromString(payload.data)
+                self.check_utente_authorization(utente, [Utente.CEDENTE], id=payload_data.id_cedente)
+                self.set_richiesta_accreditamento_state(payload_data)
+            except Exception:
+                raise InvalidTransaction("Invalid Payload for {}".format(RichiestaAccreditamentoPayload.PayloadType.Name(payload.type)))
 
         # aggiornamento stato richiesta    
-        elif payload.payload_type == RichiestaAccreditamentoPayload.AGGIORNAMENTO_STATO:
-            if payload.HasField('aggiornamento_stato'):
-                action_payload = payload.aggiornamento_stato
-                richiesta = self.get_richiesta_accreditamento_state(action_payload.id_richiesta)
+        elif payload.type == RichiestaAccreditamentoPayload.AGGIORNAMENTO_STATO:
+            payload_data = RichiestaAccreditamentoPayload.AggiornamentoStato
+            try:
+                payload_data.ParseFromString(payload.data)
+                richiesta = self.get_richiesta_accreditamento_state(payload_data.id_richiesta)
+
                 id = richiesta.id_cedente if utente.ruolo == Utente.CEDENTE else None
                 id_gruppo_acquirente = None
-                if any(utente.ruolo == ruolo for ruolo in [Utente.ACQUIRENTE]): 
+                if any(utente.ruolo == ruolo for ruolo in [Utente.ACQUIRENTE, Utente.VALIDATORE]): 
                     id_gruppo_acquirente = richiesta.id_gruppo_acquirente
-                self.check_utente_authorization(utente, self.STATI_RICHIESTA_RUOLI[action_payload.nuovo_stato], id, id_gruppo_acquirente) 
-                richiesta.stato = action_payload.nuovo_stato
-                richiesta.note = action_payload.note
-                richiesta.data_accreditamento = action_payload.data_accreditamento
+                self.check_utente_authorization(utente, self.STATI_RICHIESTA_RUOLI[payload_data.nuovo_stato], id, id_gruppo_acquirente)
+
+                richiesta.stato = payload_data.nuovo_stato
+                richiesta.note = payload_data.note
+                richiesta.data_accreditamento = payload_data.data_accreditamento
                 self.set_richiesta_accreditamento_state(richiesta)
-            else: 
-                raise InvalidTransaction("Payload for {} not set".format(RichiestaAccreditamentoPayload.PayloadType.Name(payload.payload_type)))
+            except Exception:
+                raise InvalidTransaction("Invalid Payload for {}".format(RichiestaAccreditamentoPayload.PayloadType.Name(payload.type)))
         
         # aggiornamento documenti richiesta
-        elif payload.payload_type == RichiestaAccreditamentoPayload.AGGIORNAMENTO_DOCUMENTI:
-            if payload.HasField('aggiornamento_documenti'):
-                action_payload = payload.aggiornamento_documenti
-                richiesta = self.get_richiesta_accreditamento_state(action_payload.id_richiesta)
+        elif payload.type == RichiestaAccreditamentoPayload.AGGIORNAMENTO_DOCUMENTI:
+            payload_data = RichiestaAccreditamentoPayload.AggiornamentoFile()
+            try:
+                payload_data.ParseFromString(payload.data)
+                richiesta = self.get_richiesta_accreditamento_state(payload_data.id_richiesta)
 
                 self.check_utente_authorization(utente, [Utente.CEDENTE], id=richiesta.id_cedente)
             
-                for doc in action_payload.documenti_aggiornati:
+                for doc in payload_data.file_aggiornati:
                     entry = richiesta.documenti[doc.id]
                     entry.Clear()
                     entry.CopyFrom(doc)
                 self.set_richiesta_accreditamento_state(richiesta)
-            else: 
-                raise InvalidTransaction("Payload for {} not set".format(RichiestaAccreditamentoPayload.PayloadType.Name(payload.payload_type)))
+            except Exception:
+                raise InvalidTransaction("Invalid Payload for {}".format(RichiestaAccreditamentoPayload.PayloadType.Name(payload.type)))
 
         else:
             raise InvalidTransaction("Unhandled payload type")
