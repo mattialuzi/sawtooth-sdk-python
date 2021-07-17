@@ -71,7 +71,7 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
 
     STATI_OFFERTA_RUOLI = {
         StatoOffertaProposta.Value('DA_VALUTARE'): [Utente.ACQUIRENTE],
-        StatoOffertaProposta.Value('ACETTATA'): [Utente.CEDENTE],
+        StatoOffertaProposta.Value('ACCETTATA'): [Utente.CEDENTE],
         StatoOffertaProposta.Value('RIFIUTATA'): [Utente.CEDENTE],
     }
     
@@ -95,132 +95,133 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
             payload_data = PropostaCessioneState()
             try:
                 payload_data.ParseFromString(payload.data)
-                self.check_utente_authorization(utente, [Utente.CEDENTE], id=payload_data.id_cedente)
-                self.set_proposta_cessione_state(payload_data)
             except Exception:
                 raise InvalidTransaction("Invalid Payload for {}".format(PropostaCessionePayload.PayloadType.Name(payload.type)))
+            self.check_utente_authorization(utente, [Utente.CEDENTE], id=payload_data.id_cedente)
+            self.set_proposta_cessione_state(payload_data)
 
         # aggiornamento stato proposta    
         elif payload.type == PropostaCessionePayload.AGGIORNAMENTO_STATO:
             payload_data = PropostaCessionePayload.AggiornamentoStato()
             try:
                 payload_data.ParseFromString(payload.data)
-                proposta = self.get_proposta_cessione_state(payload_data.id_proposta)
-
-                id = proposta.id_cedente if utente.ruolo == Utente.CEDENTE else None
-                id_gruppo_acquirente = None
-                if any(utente.ruolo == ruolo for ruolo in [Utente.ACQUIRENTE, Utente.REVISORE_FISCALE]): 
-                    id_gruppo_acquirente = proposta.id_gruppo_acquirente
-                    id = proposta.id_acquirente_borsa if proposta.id_acquirente_borsa else None
-                self.check_utente_authorization(utente, self.STATI_PROPOSTA_RUOLI[payload_data.nuovo_stato], id, id_gruppo_acquirente) 
-                
-                proposta.stato = payload_data.nuovo_stato
-                proposta.note = payload_data.note
-                proposta.id_acquirente_borsa = payload_data.id_acquirente_borsa
-
-                self.set_proposta_cessione_state(proposta)
             except Exception: 
                 raise InvalidTransaction("Invalid Payload for {}".format(PropostaCessionePayload.PayloadType.Name(payload.type)))
+            
+            proposta = self.get_proposta_cessione_state(payload_data.id_proposta)
+
+            id = proposta.id_cedente if utente.ruolo == Utente.CEDENTE else None
+            id_gruppo_acquirente = None
+            if any(utente.ruolo == ruolo for ruolo in [Utente.ACQUIRENTE, Utente.REVISORE_FISCALE]): 
+                id_gruppo_acquirente = proposta.id_gruppo_acquirente
+                id = proposta.id_acquirente_borsa if proposta.id_acquirente_borsa else None
+            self.check_utente_authorization(utente, self.STATI_PROPOSTA_RUOLI[payload_data.nuovo_stato], id, id_gruppo_acquirente) 
+            
+            proposta.stato = payload_data.nuovo_stato
+            proposta.note = payload_data.note
+            proposta.id_acquirente_borsa = payload_data.id_acquirente_borsa
+
+            self.set_proposta_cessione_state(proposta)
         
         # aggiornamento offerte proposta
         elif payload.type == PropostaCessionePayload.AGGIORNAMENTO_OFFERTE:
-            payload_data = PropostaCessionePayload.AggiornamentoOfferte
+            payload_data = PropostaCessionePayload.AggiornamentoOfferte()
             try:
                 payload_data.ParseFromString(payload.data)
-                proposta = self.get_proposta_cessione_state(payload_data.id_proposta)
-                
-                if proposta.stato != PropostaCessioneState.PROPOSTA:
-                    raise InvalidTransaction("Le offerte possono essere modficate solo quando la proposta è nello stato PROPOSTA")
- 
-                is_cedente = utente.ruolo == Utente.CEDENTE
-                is_gruppo_acquirente = any(utente.ruolo == ruolo for ruolo in [Utente.ACQUIRENTE, Utente.REVISORE_FISCALE])
-
-                for offerta in payload_data.offerte_aggiornate:
-
-                    id = proposta.id_cedente if is_cedente else None
-                    id = offerta.id_acquirente if is_gruppo_acquirente else None
-                    self.check_utente_authorization(utente, self.STATI_OFFERTA_RUOLI[offerta.stato], id)
-
-                    entry = proposta.offerte[offerta.id]
-                    entry.Clear()
-                    entry.CopyFrom(offerta)
-
-                self.set_proposta_cessione_state(proposta)
             except Exception:
                 raise InvalidTransaction("Invalid Payload for {}".format(PropostaCessionePayload.PayloadType.Name(payload.type)))
+            proposta = self.get_proposta_cessione_state(payload_data.id_proposta)
+            
+            if proposta.stato != PropostaCessioneState.PROPOSTA:
+                raise InvalidTransaction("Le offerte possono essere modficate solo quando la proposta è nello stato PROPOSTA")
+
+            is_cedente = utente.ruolo == Utente.CEDENTE
+            is_gruppo_acquirente = any(utente.ruolo == ruolo for ruolo in [Utente.ACQUIRENTE, Utente.REVISORE_FISCALE])
+
+            for offerta in payload_data.offerte_aggiornate:
+
+                id = proposta.id_cedente if is_cedente else None
+                id = offerta.id_acquirente if is_gruppo_acquirente else None
+                self.check_utente_authorization(utente, self.STATI_OFFERTA_RUOLI[offerta.stato], id)
+
+                entry = proposta.offerte[offerta.id]
+                entry.Clear()
+                entry.CopyFrom(offerta)
+
+            self.set_proposta_cessione_state(proposta)
         
         # eliminazione offerte proposta
         elif payload.type == PropostaCessionePayload.ELIMINAZIONE_OFFERTE:
-            payload_data = PropostaCessionePayload.EliminazioneOfferte
+            payload_data = PropostaCessionePayload.EliminazioneOfferte()
             try:
                 payload_data.ParseFromString(payload.data)
-                proposta = self.get_proposta_cessione_state(payload_data.id_proposta)
-                
-                if proposta.stato != PropostaCessioneState.PROPOSTA:
-                    raise InvalidTransaction("Le offerte possono essere eliminate solo quando la proposta è nello stato PROPOSTA")
- 
-                is_cedente = utente.ruolo == Utente.CEDENTE
-                is_gruppo_acquirente = any(utente.ruolo == ruolo for ruolo in [Utente.ACQUIRENTE, Utente.REVISORE_FISCALE])
-
-                for id_offerta in payload_data.id_offerte:
-
-                    offerta = proposta.offerte[id_offerta]
-                    if offerta.id_acquirente:
-                        id_acquirente = offerta.id_acquirente
-                        self.check_utente_authorization(utente, self.STATI_OFFERTA_RUOLI[offerta.stato], id_acquirente)
-                        
-                        offerta.Clear()
-                        del proposta.offerte[id_offerta]
-
-                        self.set_proposta_cessione_state(proposta)
-                    else:
-                        # necessario comunque eliminare l'offerta in quanto ne viene creata una 
-                        # quando fa accesso al dizionario (vedi proto 3 - python)
-                        del proposta.offerte[id_offerta]
-                        raise InvalidTransaction("L' offerta da eliminare non esiste")
             except Exception:
                 raise InvalidTransaction("Invalid Payload for {}".format(PropostaCessionePayload.PayloadType.Name(payload.type)))
+            proposta = self.get_proposta_cessione_state(payload_data.id_proposta)
+            
+            if proposta.stato != PropostaCessioneState.PROPOSTA:
+                raise InvalidTransaction("Le offerte possono essere eliminate solo quando la proposta è nello stato PROPOSTA")
+
+            is_cedente = utente.ruolo == Utente.CEDENTE
+            is_gruppo_acquirente = any(utente.ruolo == ruolo for ruolo in [Utente.ACQUIRENTE, Utente.REVISORE_FISCALE])
+
+            for id_offerta in payload_data.id_offerte:
+
+                offerta = proposta.offerte[id_offerta]
+                if offerta.id_acquirente:
+                    id_acquirente = offerta.id_acquirente
+                    self.check_utente_authorization(utente, self.STATI_OFFERTA_RUOLI[offerta.stato], id_acquirente)
+                    
+                    offerta.Clear()
+                    del proposta.offerte[id_offerta]
+
+                    self.set_proposta_cessione_state(proposta)
+                else:
+                    # necessario comunque eliminare l'offerta in quanto ne viene creata una 
+                    # quando fa accesso al dizionario (vedi proto 3 - python)
+                    del proposta.offerte[id_offerta]
+                    raise InvalidTransaction("L'offerta da eliminare non esiste")
         
         # aggiornamento documenti proposta
         elif payload.type == PropostaCessionePayload.AGGIORNAMENTO_DOCUMENTI:
             payload_data = PropostaCessionePayload.AggiornamentoFile()
             try:
                 payload_data.ParseFromString(payload.data)
-                proposta = self.get_proposta_cessione_state(payload_data.id_proposta)
-
-                id = proposta.id_cedente if utente.ruolo == Utente.CEDENTE else None
-                id_gruppo_acquirente = None
-                if any(utente.ruolo == ruolo for ruolo in [Utente.ACQUIRENTE, Utente.REVISORE_FISCALE]): 
-                    id_gruppo_acquirente = proposta.id_gruppo_acquirente
-                    id = proposta.id_acquirente_borsa if proposta.id_acquirente_borsa else None
-                self.check_utente_authorization(utente, [Utente.CEDENTE, Utente.ACQUIRENTE], id, id_gruppo_acquirente) 
-                
-                for doc in payload_data.file_aggiornati:
-                    entry = proposta.documenti[doc.id]
-                    entry.Clear()
-                    entry.CopyFrom(doc)
-
-                self.set_proposta_cessione_state(proposta)
             except Exception:
                 raise InvalidTransaction("Invalid Payload for {}".format(PropostaCessionePayload.PayloadType.Name(payload.type)))
+            proposta = self.get_proposta_cessione_state(payload_data.id_proposta)
+
+            id = proposta.id_cedente if utente.ruolo == Utente.CEDENTE else None
+            id_gruppo_acquirente = None
+            if any(utente.ruolo == ruolo for ruolo in [Utente.ACQUIRENTE, Utente.REVISORE_FISCALE]): 
+                id_gruppo_acquirente = proposta.id_gruppo_acquirente
+                id = proposta.id_acquirente_borsa if proposta.id_acquirente_borsa else None
+            self.check_utente_authorization(utente, [Utente.CEDENTE, Utente.ACQUIRENTE], id, id_gruppo_acquirente) 
+            
+            for doc in payload_data.file_aggiornati:
+                entry = proposta.documenti[doc.id]
+                entry.Clear()
+                entry.CopyFrom(doc)
+
+            self.set_proposta_cessione_state(proposta)
         
         # aggiornamento contratti proposta
         elif payload.type == PropostaCessionePayload.AGGIORNAMENTO_CONTRATTI:
             payload_data = PropostaCessionePayload.AggiornamentoFile()
             try:
                 payload_data.ParseFromString(payload.data)
-                proposta = self.get_proposta_cessione_state(payload_data.id_proposta)
-
-                self.check_utente_authorization(utente, [Utente.CEDENTE], id=proposta.id_cedente)
-
-                for contratto in payload_data.file_aggiornati:
-                    entry = proposta.contratti[contratto.id]
-                    entry.Clear()
-                    entry.CopyFrom(contratto)
-
-                self.set_proposta_cessione_state(proposta)
             except Exception:
                 raise InvalidTransaction("Invalid Payload for {}".format(PropostaCessionePayload.PayloadType.Name(payload.type)))
+            proposta = self.get_proposta_cessione_state(payload_data.id_proposta)
+
+            self.check_utente_authorization(utente, [Utente.CEDENTE], id=proposta.id_cedente)
+
+            for contratto in payload_data.file_aggiornati:
+                entry = proposta.contratti[contratto.id]
+                entry.Clear()
+                entry.CopyFrom(contratto)
+
+            self.set_proposta_cessione_state(proposta)
 
         else:
             raise InvalidTransaction("Unhandled payload type")

@@ -159,7 +159,6 @@ services:
       "
     stop_signal: SIGKILL
 
-
   validator:
     # image: hyperledger/sawtooth-validator:chime
     image: sawtooth-validator-local:latest
@@ -192,7 +191,6 @@ services:
       "
     stop_signal: SIGKILL
 
-
   rest-api:
     image: hyperledger/sawtooth-rest-api:chime
     container_name: sawtooth-rest-api
@@ -205,7 +203,6 @@ services:
         sawtooth-rest-api -v --connect tcp://validator:4004 --bind rest-api:8008
       "
     stop_signal: SIGKILL
-
 
   devmode-rust:
     image: hyperledger/sawtooth-devmode-engine-rust:chime

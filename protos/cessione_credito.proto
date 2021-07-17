@@ -51,7 +51,7 @@ enum TipologiaCessione {
 
 enum StatoOffertaProposta {
     DA_VALUTARE = 0;
-    ACETTATA = 1;
+    ACCETTATA = 1;
     RIFIUTATA = 2;
 }
 
@@ -106,7 +106,7 @@ message PropostaCessionePayload {
 
     enum PayloadType {
         PAYLOAD_TYPE_UNSET = 0;
-        CERAZIONE_PROPOSTA = 1;
+        CREAZIONE_PROPOSTA = 1;
         AGGIORNAMENTO_STATO = 2;
         AGGIORNAMENTO_OFFERTE = 3;
         AGGIORNAMENTO_DOCUMENTI = 4;
