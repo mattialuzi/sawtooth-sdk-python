@@ -190,7 +190,8 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
             except Exception:
                 raise InvalidTransaction("Invalid Payload for {}".format(PropostaCessionePayload.PayloadType.Name(payload.type)))
             proposta = self.get_proposta_cessione_state(payload_data.id_proposta)
-
+            
+            # la condizione per lo stato LIQUIDARE è dovuta alla presenza dei bonifici dell'acquirente tra i documenti della proposta
             if proposta.stato != PropostaCessioneState.PREPARAZIONE and proposta.stato != PropostaCessioneState.DA_LIQUIDARE:
                 raise InvalidTransaction("I documenti possono essere modficati solo quando la proposta è nello stato PREPARAZIONE o DA LIQUIDARE")
 
