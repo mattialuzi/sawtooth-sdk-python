@@ -108,6 +108,9 @@ class RichiestaAccreditamentoTransactionHandler(TransactionHandler):
                 raise InvalidTransaction("Invalid Payload for {}".format(RichiestaAccreditamentoPayload.PayloadType.Name(payload.type)))
             richiesta = self.get_richiesta_accreditamento_state(payload_data.id_richiesta)
 
+            if richiesta.stato != RichiestaAccreditamentoState.PREPARAZIONE:
+                raise InvalidTransaction("I documenti possono essere modficati solo quando la richiesta è nello stato PREPARAZIONE")
+                
             self.check_utente_authorization(utente, [Utente.CEDENTE], id=richiesta.id_cedente)
         
             for doc in payload_data.file_aggiornati:

@@ -191,6 +191,9 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
                 raise InvalidTransaction("Invalid Payload for {}".format(PropostaCessionePayload.PayloadType.Name(payload.type)))
             proposta = self.get_proposta_cessione_state(payload_data.id_proposta)
 
+            if proposta.stato != PropostaCessioneState.PREPARAZIONE and proposta.stato != PropostaCessioneState.DA_LIQUIDARE:
+                raise InvalidTransaction("I documenti possono essere modficati solo quando la proposta è nello stato PREPARAZIONE o DA LIQUIDARE")
+
             id = proposta.id_cedente if utente.ruolo == Utente.CEDENTE else None
             id_gruppo_acquirente = None
             if any(utente.ruolo == ruolo for ruolo in [Utente.ACQUIRENTE, Utente.REVISORE_FISCALE]): 
@@ -213,6 +216,10 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
             except Exception:
                 raise InvalidTransaction("Invalid Payload for {}".format(PropostaCessionePayload.PayloadType.Name(payload.type)))
             proposta = self.get_proposta_cessione_state(payload_data.id_proposta)
+
+            if proposta.stato != PropostaCessioneState.CONTRATTO_DA_FIRMARE:
+                raise InvalidTransaction("Il contratto da firmare può essere modficato solo quando la proposta è nello stato CONTRATTO DA FIRMARE")
+
 
             self.check_utente_authorization(utente, [Utente.CEDENTE], id=proposta.id_cedente)
 
