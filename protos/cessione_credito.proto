@@ -47,6 +47,7 @@ message PropostaCessioneState {
 enum TipologiaCessione {
     PREISTRUTTORIA_110 = 0;
     ISTRUTTORIA_110 = 1;
+    ISTRUTTORIA_BONUS = 2;
 }
 
 enum StatoOffertaProposta {
