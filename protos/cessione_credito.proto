@@ -23,25 +23,24 @@ message PropostaCessioneState {
     int32 id_cedente = 4;
     // id del gruppo acquirente 
     int32 id_gruppo_acquirente = 5;
+    // id del sal selezionato per la proposta
+    int32 id_sal = 6;
     // se la proposta è gestita con meccanismo di borsa credito o meno
-    bool borsa_credito = 6;
+    bool borsa_credito = 7;
     // id dell'acquirente che si aggiudica la proposta (caso borsa del credito)
-    int32 id_acquirente_borsa = 7;
-    string data_creazione = 8;
-    string note = 9;
+    int32 id_acquirente_borsa = 8;
+    string data_creazione = 9;
+    string note = 10;
     // valore in cent di €
-    uint32 importo_totale = 10;
+    uint32 importo = 11;
     // valore in cent di € 
-    uint32 credito_totale = 11;
-
+    uint32 credito = 12;
     // map<id_offerta, offerta> offerte
-    map<int32, OffertaProposta> offerte = 12;
+    map<int32, OffertaProposta> offerte = 13;
     // map<id_file_documento, sha512 documento> file documenti
-    map<int32, HashedFile> documenti = 13;
+    map<int32, HashedFile> documenti = 14;
      // map<id_file_contratto, sha512 contratto> file contratti
-    map<int32, HashedFile> contratti = 14;
-    // map<id_file_bonifico, sha512 bonifico> file bonifici
-    map<int32, HashedFile> bonifici = 15;
+    map<int32, HashedFile> contratti = 15;
 }
 
 enum TipologiaCessione {
