@@ -116,13 +116,6 @@ message PropostaCessionePayload {
 
     PayloadType type = 1;
     bytes data = 2;
-    // TODO: considera utilizzo oneof per questi campi 
-    // PropostaCessioneState nuova_proposta = 2;
-    // AggiornamentoStato aggiornamento_stato = 3;
-    // AggiornamentoOfferte aggiornamento_offerte = 4;
-    // AggiornamentoFile aggiornamento_documenti = 5;
-    // AggiornamentoFile aggiornamento_contratti = 6;
-    // AggiornamentoFile aggiornamento_bonifici = 7;
 }
 
 message RichiestaAccreditamentoState {
@@ -179,11 +172,6 @@ message RichiestaAccreditamentoPayload {
 
     PayloadType type = 1;
     bytes data = 2;
-
-    // TODO: considera utilizzo oneof per questi campi 
-    // RichiestaAccreditamentoState nuova_richiesta = 2;
-    // AggiornamentoStato aggiornamento_stato = 3;
-    // AggiornamentoDocumenti aggiornamento_documenti = 4;
 }
 
 message Utente {
