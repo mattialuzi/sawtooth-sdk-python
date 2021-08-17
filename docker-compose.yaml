@@ -161,7 +161,8 @@ services:
 
   validator:
     # image: hyperledger/sawtooth-validator:chime
-    image: sawtooth-validator-local:latest
+    # image: sawtooth-validator-local:latest
+    image: wall94/sawtooth-validator:latest
 
     container_name: sawtooth-validator
     expose:
