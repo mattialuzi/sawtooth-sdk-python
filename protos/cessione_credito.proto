@@ -36,11 +36,11 @@ message PropostaCessioneState {
     // valore in cent di € 
     uint32 credito = 12;
     // map<id_offerta, offerta> offerte
-    map<int32, OffertaProposta> offerte = 13;
+    repeated OffertaProposta offerte = 13;
     // map<id_file_documento, sha512 documento> file documenti
-    map<int32, HashedFile> documenti = 14;
+    repeated HashedFile documenti = 14;
      // map<id_file_contratto, sha512 contratto> file contratti
-    map<int32, HashedFile> contratti = 15;
+     repeated HashedFile contratti = 15;
 }
 
 enum TipologiaCessione {
@@ -138,8 +138,8 @@ message RichiestaAccreditamentoState {
     string data_creazione = 6;
     string data_accreditamento = 7;
     string note = 8;
-    // map<id_file_documento, sha512 documento> file documenti
-    map<int32, HashedFile> documenti = 9;
+    
+    repeated HashedFile documenti = 9;
 }
 
 message RichiestaAccreditamentoPayload {

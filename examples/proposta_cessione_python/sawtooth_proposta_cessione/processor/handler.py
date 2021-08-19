@@ -137,16 +137,25 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
 
             is_cedente = utente.ruolo == Utente.CEDENTE
             is_gruppo_acquirente = any(utente.ruolo == ruolo for ruolo in [Utente.ACQUIRENTE, Utente.REVISORE_FISCALE])
-
+            
             for offerta in payload_data.offerte_aggiornate:
 
                 id = proposta.id_cedente if is_cedente else None
                 id = offerta.id_acquirente if is_gruppo_acquirente else None
                 self.check_utente_authorization(utente, self.STATI_OFFERTA_RUOLI[offerta.stato], id)
 
-                entry = proposta.offerte[offerta.id]
-                entry.Clear()
-                entry.CopyFrom(offerta)
+                for index, item in enumerate(proposta.offerte):
+                    if item.id == offerta.id:
+                        break
+                else:
+                    index = -1
+                if (index != -1):
+                    entry = proposta.offerte[index]
+                    entry.Clear()
+                    entry.CopyFrom(offerta)
+                else:
+                    nuova_offerta = proposta.offerte.add()
+                    nuova_offerta.CopyFrom(offerta)
 
             self.set_proposta_cessione_state(proposta)
         
@@ -167,21 +176,20 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
 
             for id_offerta in payload_data.id_offerte:
 
-                offerta = proposta.offerte[id_offerta]
-                if offerta.id_acquirente:
-                    id_acquirente = offerta.id_acquirente
-                    self.check_utente_authorization(utente, self.STATI_OFFERTA_RUOLI[offerta.stato], id_acquirente)
-                    
-                    offerta.Clear()
-                    del proposta.offerte[id_offerta]
-
-                    self.set_proposta_cessione_state(proposta)
+                for index, item in enumerate(proposta.offerte):
+                    if item.id == id_offerta:
+                        break
                 else:
-                    # necessario comunque eliminare l'offerta in quanto ne viene creata una 
-                    # quando fa accesso al dizionario (vedi proto 3 - python)
-                    del proposta.offerte[id_offerta]
                     raise InvalidTransaction("L'offerta da eliminare non esiste")
-        
+
+                offerta = proposta.offerte[index]
+                id_acquirente = offerta.id_acquirente
+                self.check_utente_authorization(utente, self.STATI_OFFERTA_RUOLI[offerta.stato], id_acquirente)
+                
+                del proposta.offerte[index]
+
+            self.set_proposta_cessione_state(proposta)
+ 
         # aggiornamento documenti proposta
         elif payload.type == PropostaCessionePayload.AGGIORNAMENTO_DOCUMENTI:
             payload_data = PropostaCessionePayload.AggiornamentoFile()
@@ -203,9 +211,16 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
             self.check_utente_authorization(utente, [Utente.CEDENTE, Utente.ACQUIRENTE], id, id_gruppo_acquirente) 
             
             for doc in payload_data.file_aggiornati:
-                entry = proposta.documenti[doc.id]
-                entry.Clear()
-                entry.CopyFrom(doc)
+                for index, item in enumerate(proposta.documenti):
+                    if item.id == doc.id:
+                        break
+                else:
+                    index = -1
+                if (index != -1):
+                    proposta.documenti[index].hash = doc.hash
+                else:
+                    newDoc = proposta.documenti.add()
+                    newDoc.CopyFrom(doc)
 
             self.set_proposta_cessione_state(proposta)
         
@@ -221,13 +236,19 @@ class PropostaCessioneTransactionHandler(TransactionHandler):
             if proposta.stato != PropostaCessioneState.CONTRATTO_DA_FIRMARE:
                 raise InvalidTransaction("Il contratto da firmare può essere modficato solo quando la proposta è nello stato CONTRATTO DA FIRMARE")
 
-
             self.check_utente_authorization(utente, [Utente.CEDENTE], id=proposta.id_cedente)
-
+            
             for contratto in payload_data.file_aggiornati:
-                entry = proposta.contratti[contratto.id]
-                entry.Clear()
-                entry.CopyFrom(contratto)
+                for index, item in enumerate(proposta.contratti):
+                    if item.id == contratto.id:
+                        break
+                else:
+                    index = -1
+                if (index != -1):
+                    proposta.contratti[index].hash = contratto.hash
+                else:
+                    newContratto = proposta.contratti.add()
+                    newContratto.CopyFrom(contratto)
 
             self.set_proposta_cessione_state(proposta)
 

@@ -114,9 +114,17 @@ class RichiestaAccreditamentoTransactionHandler(TransactionHandler):
             self.check_utente_authorization(utente, [Utente.CEDENTE], id=richiesta.id_cedente)
         
             for doc in payload_data.file_aggiornati:
-                entry = richiesta.documenti[doc.id]
-                entry.Clear()
-                entry.CopyFrom(doc)
+                for index, item in enumerate(richiesta.documenti):
+                    if item.id == doc.id:
+                        break
+                else:
+                    index = -1
+                if (index != -1):
+                    richiesta.documenti[index].hash = doc.hash
+                else:
+                    newDoc = richiesta.documenti.add()
+                    newDoc.CopyFrom(doc)
+
             self.set_richiesta_accreditamento_state(richiesta)
             
         else:
