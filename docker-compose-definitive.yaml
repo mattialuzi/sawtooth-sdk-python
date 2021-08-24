@@ -27,41 +27,8 @@ services:
       "
     stop_signal: SIGKILL
 
-  intkey-tp-python:
-    build:
-      context: .
-      dockerfile: examples/intkey_python/Dockerfile
-      args:
-        - http_proxy
-        - https_proxy
-        - no_proxy
-    image: intkey-tp-python-local:${ISOLATION_ID}
-    volumes:
-      - ./:/project/sawtooth-sdk-python
-    container_name: intkey-tp-python-local
-    depends_on:
-      - validator
-    command: |
-      bash -c "
-        bin/protogen
-        cd examples/intkey_python
-        python3 setup.py clean --all
-        python3 setup.py build
-        intkey-tp-python -vv -C tcp://validator:4004
-      "
-    stop_signal: SIGKILL
-    
   proposta-cessione-tp-python:
-    # build:
-    #   context: .
-    #   dockerfile: examples/proposta_cessione_python/Dockerfile
-    #   args:
-    #     - http_proxy
-    #     - https_proxy
-    #     - no_proxy
     image: wall94/proposta-cessione-tp-python-local
-    # volumes:
-    #   - ./:/project/sawtooth-sdk-python
     container_name: proposta-cessione-tp-python-local
     depends_on:
       - validator
@@ -72,16 +39,7 @@ services:
     stop_signal: SIGKILL
 
   richiesta-accreditamento-tp-python:
-    # build:
-    #   context: .
-    #   dockerfile: examples/richiesta_accreditamento_python/Dockerfile
-    #   args:
-    #     - http_proxy
-    #     - https_proxy
-    #     - no_proxy
     image: wall94/richiesta-accreditamento-tp-python-local
-    # volumes:
-    #   - ./:/project/sawtooth-sdk-python
     container_name: richiesta-accreditamento-tp-python-local
     depends_on:
       - validator
@@ -92,16 +50,7 @@ services:
     stop_signal: SIGKILL
 
   utente-tp-python:
-    # build:
-    #   context: .
-    #   dockerfile: examples/utente_python/Dockerfile
-    #   args:
-    #     - http_proxy
-    #     - https_proxy
-    #     - no_proxy
     image: wall94/utente-tp-python-local:latest
-    # volumes:
-    #   - ./:/project/sawtooth-sdk-python
     container_name: utente-tp-python-local
     depends_on:
       - validator
@@ -124,8 +73,6 @@ services:
     stop_signal: SIGKILL
 
   validator:
-    # image: hyperledger/sawtooth-validator:chime
-    # image: sawtooth-validator-local:latest
     image: wall94/sawtooth-validator:latest
 
     container_name: sawtooth-validator
